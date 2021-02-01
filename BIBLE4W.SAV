@@ -1,0 +1,2975 @@
+#pragma message( "Compiling " __FILE__ " on " __DATE__ " at " __TIME__ )
+#pragma message( "File last modified on " __TIMESTAMP__ )
+#pragma message( "  ")
+#pragma title( "Bible for Windows version 1.1" )
+#pragma subtitle( "Main program module" )
+#pragma check_stack()
+#pragma comment( compiler )
+#pragma comment( user, "Compiled on " __DATE__ " at " __TIME__ ".  Last modified on " __TIMESTAMP__ )
+
+/***************************************************************************
+ *									   *
+ *  PROGRAM	: bible4w.c						   *
+ *									   *
+ *  PURPOSE	: To provide a user friendly interface for accessing bible *
+ *		  verses from a Microsoft Windows environment.		   *
+ *									   *
+ *  FUNCTIONS	: WinMain()	      - Calls the initialization function  *
+ *					and enters the message loop.	   *
+ *									   *
+ *		  Bible4wInit()       - Registers the app. window class.   *
+ *									   *
+ *		  About()	      - Dialog function for the About..    *
+ *					dialog. 			   *
+ *									   *
+ *		  FindDlg()	      - Dialog function for the Find	   *
+ *					dialog. 			   *
+ *									   *
+ *		  GoToDlg()	      - Dialog function for the Go To	   *
+ *					dialog. 			   *
+ *									   *
+ *		  Bible4wPaint()      - Handles repainting the app's client*
+ *					area				   *
+ *									   *
+ *		  MenuWndProc()       - Window function for the app.	   *
+ *									   *
+ *		  MakeHelpPathName()  - Derives path name of help file.    *
+ *									   *
+ ***************************************************************************/
+
+		  /*  + + + + +  Includes  + + + + +  */
+
+#include <windows.h>
+//#include <windowsx.h>
+#include <penwin.h>
+#include <stdio.h>
+#include <conio.h>
+#include <string.h>
+#include <process.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <io.h>
+#include <sys\types.h>
+#include <sys\stat.h>
+#include "bible4w.h"
+#include "wprintf.h"
+
+		   /*  + + + + +  Macros  + + + + +  */
+
+		  /*  + + + + +  Functions  + + + + +  */
+
+BOOL FAR PASCAL Bible4wInit(HANDLE, HANDLE);
+void FAR PASCAL Bible4wPaint ( HWND );
+void NEAR GETOC ( long int );
+void NEAR GETWL ( long int );
+void FAR FNDWRD ( int* );
+void FAR OpenBible ( HWND );
+void NEAR LLConnect ( int , int );
+int  NEAR LLBreak   ( int );
+int  NEAR LLDist    ( int , int );
+BOOL NEAR GetNextLine ( int , int );
+void NEAR MakeBufValid ( void );
+void FAR MoveToCilpBoard ( void );
+BOOL FAR CheckPickList ( int Vnum );
+void FAR MakeHelpPathName(char*);  /* Function deriving help file path */
+void FAR OutOfMem ( void );
+short FAR BWError(HWND hwnd, WORD bFlags, WORD quit, WORD id, ...);
+BOOL FAR PASCAL fLookUp ( LPSTR szLookUpWord , int iWordLength );
+VOID (FAR PASCAL *RegPenApp)(WORD, BOOL) = NULL;
+BOOL FAR PASCAL bValidateBookItem ( HWND hDlg , LPINT ibook );
+VOID FAR wexit ( int );
+VOID NEAR PaintTheDlg ( HWND hDlg );
+VOID FAR OPEN_KJB ( HFILE FAR *pFile, LPSTR szFileName, WORD szMode );
+VOID FAR OPEN_CLIP ( HFILE FAR *pFile, LPSTR szFileName, WORD szMode );
+
+		/*  + + + + +  Static Globals  + + + + +  */
+
+char *	szCustomDictLib	= "custdict.dll";
+char *	szCustomDictProc = "DictionaryProc";
+HANDLE 	hCustomDictLib;
+LPDF	lpdfCustomDictProc;
+FARPROC lpfnLookUp;
+BOOL	bBookDict=FALSE;
+BOOL	fDebug = FALSE;
+
+
+HANDLE	 hInst;
+HWND	 hWnd;
+HANDLE	 hPenWin;
+short	 cxChar = 9;
+short	 cxCaps;
+short	 cyChar = 9;
+int	 nNumChars;
+long int ID;
+short glocxChar , glocyChar;
+int nGotoFocus;
+
+OFSTRUCT ofKJB;
+OFSTRUCT ofCLIP;
+
+unsigned char IWL[maxwrd_dim];
+//char a[maxlin_dim];		  what was this used for ????
+char AWORD[33];
+//char ALN[82]; 		  what was this used for ????
+//char huge (*hpWORDS)[ndimw_dim][nlenw_dim];
+char huge *hpWORDS;
+GLOBALHANDLE hWORDS;
+//char FNAME[11];		  what was this used for ????
+HFILE IUNIT10;
+HFILE IUNIT11;
+int I2WRD , IBSHI , IBSLOW;
+//long int LWS[257];		  what was this used for ????
+//long int huge (*hpIWS)[maxwrd_dim];
+long int huge *hpIWS;
+GLOBALHANDLE hIWS;
+int ITVERS , IVERS , ICHAP;
+// unsigned char LWL[257] , NWL;  what was this used for ????
+
+long int IR,IVSG,IVS,IVE,IVW;
+unsigned char ICAP;
+unsigned char GOODNA;
+
+long int LAWORD , LASTWD , LASTSB , NHASH;
+long int IER;
+int I2ZERO;
+long int LASTAD , IRECIN , IRMOD;
+int I2IX[257];		      // buffer used by getwrd routines
+
+// int IADVER[501] , LASTVR;	 what was this used for ????
+long int IBASVR;
+short cxClient;
+short cyClient;
+int   cxScreen;
+int   cyScreen;
+int   cxDlgFrame;
+int   cyDlgFrame;
+int   cyCaption;
+GLOBALHANDLE hDCBuffer	   = NULL;
+typedef struct tagVERSEREFS
+ {
+	     long int VerseStart;
+	     long int VerseEnd;
+	     int  VerseNum;
+	     BOOL picked;
+ } VERSEREFS;
+VERSEREFS VerseRefs[VerseRefBufSize];
+BOOL isPicked;
+int nVerseRefTop = 0;
+int nNumLinesInBuffer;
+int nNumColsInBuffer;
+int nTOS = -1;
+int nTOB = 0;
+int nBOB = 0;
+int nTBOB = 0;
+typedef struct tagBUFPOINT
+ {
+	     int  refnum;
+    unsigned char length;
+    unsigned char line;
+    unsigned char forward;
+    unsigned char backward;
+	     BOOL picked;
+ } BUFPOINT;
+BUFPOINT BufPoint[VerseRefBufSize];
+BOOL bValidBuffer;
+int nTopIRRef;
+unsigned char nRefLine;
+HDC hdc;
+RECT rc;
+LPSTR lpBuffer;
+int nGoToRef;
+unsigned char ucGoToLine;
+
+union chps
+{
+    int I2AC[2402];
+    long int IADCHP[1201];
+}  chap;
+union bks
+{
+    int I2BK[136];
+    long int IADBOK[68];
+}  book;
+unsigned int unBook2Chap[68];
+
+long int LASTCH;
+
+long int IADIN , IADOFF;
+int I2WORD;
+int I2REF;
+int I2WOLD;
+int I2NREF;
+
+//  unsigned char LV[2401];	  what was this for ???????
+
+int I2VER;
+union ptts
+{
+    int I2POI[2];
+    long int IPOINT;
+}  ipoint;
+
+union lohi
+{
+    int I2HILO[2];
+    long int I4HILO;
+}  hilo;
+char books[67][3] =
+{
+    "   ",
+    "GEN",
+    "EXO",
+    "LEV",
+    "NUM",
+    "DEU",
+    "JOS",
+    "JDG",
+    "RTH",
+    "SA1",
+    "SA2",
+    "KI1",
+    "KI2",
+    "CH1",
+    "CH2",
+    "EZR",
+    "NEH",
+    "EST",
+    "JOB",
+    "PSA",
+    "PRO",
+    "ECC",
+    "SON",
+    "ISA",
+    "JER",
+    "LAM",
+    "EZE",
+    "DAN",
+    "HOS",
+    "JOE",
+    "AMO",
+    "OBA",
+    "JON",
+    "MIC",
+    "NAH",
+    "HAB",
+    "ZEP",
+    "HAG",
+    "ZEC",
+    "MAL",
+    "MAT",
+    "MAR",
+    "LUK",
+    "JOH",
+    "ACT",
+    "ROM",
+    "CO1",
+    "CO2",
+    "GAL",
+    "EPH",
+    "PHI",
+    "COL",
+    "TH1",
+    "TH2",
+    "TI1",
+    "TI2",
+    "TIT",
+    "PHM",
+    "HEB",
+    "JAM",
+    "PE1",
+    "PE2",
+    "JO1",
+    "JO2",
+    "JO3",
+    "JUD",
+    "REV"
+};
+int nPickList[PICKLISTSIZE];
+int nNumPicks = 0;
+char szHelpFileName[EXE_NAME_MAX_SIZE+1];    /* Help file name*/
+
+
+/****************************************************************************
+ *									    *
+ *  FUNCTION   : WinMain(HANDLE, HANDLE, LPSTR, int)			    *
+ *									    *
+ *  PURPOSE    : Creates the main app. window, calls an initialization	    *
+ *		 function and enters the message loop.			    *
+ *									    *
+ ****************************************************************************/
+int PASCAL WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR  lpCmdLine, int nCmdShow)
+{
+    MSG   msg;
+    HANDLE hAccel;
+    char szAppName[] = "Bible4w";
+
+/* Save the Instance handel */
+
+    hInst = hInstance;
+
+#ifdef DEBUG
+    fDebug = TRUE;
+    dprintf("%C");
+#endif
+
+/* Register main window class if this is the first instance of the app. */
+
+    if ( !Bible4wInit (hInstance,hPrevInstance ) ) return NULL;
+
+    ShowWindow (hWnd, nCmdShow);
+    UpdateWindow (hWnd);
+
+    hAccel = LoadAccelerators ( hInstance , szAppName );
+
+    while (GetMessage (&msg, NULL, NULL, NULL))
+    {
+	if ( !TranslateAccelerator ( hWnd , hAccel , &msg ) )
+	{
+	    TranslateMessage (&msg);
+	    DispatchMessage (&msg);
+	}
+    }
+    return((int)msg.wParam);
+}
+
+#pragma  alloc_text( SEG2, About )
+
+/****************************************************************************
+ *									    *
+ *  FUNCTION   : About (hDlg, message, wParam, lParam)			    *
+ *									    *
+ *  PURPOSE    : Dialog function for the About Bible4w... dialog.	    *
+ *									    *
+ ****************************************************************************/
+BOOL CALLBACK _export About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    switch (message)
+    {
+	case WM_INITDIALOG:
+	    return(TRUE);
+	    break;
+
+	case WM_COMMAND:
+	    switch (wParam)
+	    {
+	    case IDOK:
+	    case IDCANCEL:
+		EndDialog(hDlg,NULL);
+		return(TRUE);
+		break;
+
+	    }
+	    break;
+
+  //	  default:
+  //	      return ( DefDlgProc ( hDlg, message, wParam, lParam ) );
+  //	      return(TRUE);
+  //	      break;
+
+    }
+    return(FALSE);
+}
+
+#pragma  alloc_text( SEG3, FindDlg )
+/****************************************************************************
+ *									    *
+ *  FUNCTION   : FindDlg (hDlg, message, wParam, lParam)		    *
+ *									    *
+ *  PURPOSE    : Dialog function for the Find dialog box.		    *
+ *									    *
+ ****************************************************************************/
+BOOL CALLBACK _export FindDlg(hDlg, message, wParam, lParam)
+
+HWND hDlg;
+unsigned message;
+WORD wParam;
+LONG lParam;
+
+{
+    int I;
+    HANDLE hDlgItem;
+    RC rcin;
+    int nOldI2NREF;
+
+    switch (message){
+	case WM_INITDIALOG:
+	    if ( hPenWin )
+	    {
+		/* Create Hedit window. */
+		/* If running on a Pen Windows system, this app will have
+			been registered, so all EDIT controls will be changed to
+			HEDIT controls */
+
+		hDlgItem = GetDlgItem (hDlg , DLGFINDEDITBOX );
+
+		/* Set RC preferences for this edit control */
+
+		if (SendMessage(hDlgItem, WM_HEDITCTL, HE_GETRC,
+						      (LONG)((LPRC)&rcin)))
+		{
+		   rcin.dwDictParam = (DWORD)lpfnLookUp;
+		   bBookDict=FALSE;
+		   rcin.alc = ALC_ALPHA | ALC_GESTURE ;
+     // 	     rcin.lRcOptions = rcin.lRcOptions | RCO_SUGGEST ;
+		   rcin.rglpdf[0] = lpdfCustomDictProc;
+		   rcin.rglpdf[1] = NULL;
+		   if ( SendMessage(hDlgItem, WM_HEDITCTL, HE_SETRC,
+					     (LONG)((LPRC)&rcin)) != TRUE )
+		   {
+		      (void)BWError ( hWnd,
+				    MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+				    , 0 , IDS_CANTRECOGNIZE );
+		   }
+		}
+	    }
+	    return(TRUE);
+
+	case WM_COMMAND:
+	    switch (wParam)
+	    {
+
+	    case DLGFINDOK:
+		for ( I = 1 ; I <= 32 ; I++ ) AWORD[I] = '\0';
+		GetDlgItemText (hDlg , DLGFINDEDITBOX , &AWORD[1], 30 );
+		EndDialog(hDlg,NULL);
+		if ( AWORD[1] != ' '  )
+		{
+		    for ( I = 1 ; I <= min ( 32 , _fstrlen ( &AWORD[1] ) ) ; I++ )
+		    {
+			if ( AWORD[I] != ' ' ) LAWORD = I;
+		    }
+		    nOldI2NREF = I2NREF;
+		    FNDWRD ( &I2NREF );
+		    if ( (LONG)I2NREF > NPUN && I2NREF != 0 )
+		    {
+			ID = (LONG)I2NREF;
+			I2NREF = 0;
+			ICAP = FALSE;
+			OPEN_KJB ( &IUNIT10 , "KJB2P0.DAT" , OF_READ | OF_REOPEN
+					    | OF_SHARE_DENY_WRITE );
+			GETWRD ( &ipoint.I2POI[0] , IADOFF + ID * 2 - 2 );
+			GETWRD ( &ipoint.I2POI[1] , IADOFF + ID * 2 - 1 );
+			GETWRD ( &I2NREF , ipoint.IPOINT );
+			_lclose ( IUNIT10 );
+			IR = IVSG = IVS = IVE = IVW = 0;
+			nGoToRef = 1;
+			nTopIRRef = 3 * VerseRefBufSize;
+			ucGoToLine = 1;
+			nTOS = -1;
+			bValidBuffer = FALSE;
+			nNumPicks = 0;
+
+			SetScrollRange ( hWnd , SB_VERT , 1 , I2NREF , FALSE );
+			SetScrollPos   ( hWnd , SB_VERT , 1 , TRUE );
+			InvalidateRect ( hWnd, NULL, TRUE);
+			UpdateWindow (hWnd);
+		    }
+		    else
+		    {
+		       I2NREF = nOldI2NREF;
+		       (void)BWError ( hWnd,
+				    MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+				    , 0 , IDS_NOFINDWRD );
+		    }
+		}
+		return(TRUE);
+
+	    case DLGFINDCANCEL:
+		EndDialog(hDlg,NULL);
+		return(TRUE);
+		break;
+
+	    case IDCANCEL:
+		EndDialog(hDlg,NULL);
+		return(TRUE);
+		break;
+
+	    }
+	    break;
+    }
+    return(FALSE);
+}
+
+#pragma  alloc_text( SEG4, GoToDlg )
+/****************************************************************************
+ *									    *
+ *  FUNCTION   : GoToDlg (hDlg, message, wParam, lParam)		    *
+ *									    *
+ *  PURPOSE    : Dialog function for the Go To dialog box.		    *
+ *									    *
+ ****************************************************************************/
+BOOL CALLBACK _export GoToDlg(hDlg, message, wParam, lParam)
+
+HWND hDlg;
+unsigned message;
+WORD wParam;
+LONG lParam;
+
+{
+    int ibook , ichap , iver, itmp;
+    BOOL bTrans;
+    HANDLE hDlgItem;
+    RC rcin;
+    DLGPROC lpProc;
+    char szTemp[20];
+    char szFmt1[]="(%i)";
+    int nReturnValue;
+
+    switch (message)
+    {
+	case WM_INITDIALOG:
+	    nGotoFocus=0;
+	    if ( hPenWin )
+	    {
+		/* Create Hedit window. */
+		/* If running on a Pen Windows system, this app will have
+			been registered, so all EDIT controls will be changed to
+			HEDIT controls */
+
+		hDlgItem = GetDlgItem (hDlg , DLGGOTOBOOKEDIT );
+
+		/* Set RC preferences for this edit control */
+
+		if (SendMessage(hDlgItem, WM_HEDITCTL, HE_GETRC,
+						      (LONG)((LPRC)&rcin)))
+		{
+		   rcin.dwDictParam = (DWORD)lpfnLookUp;
+		   bBookDict=TRUE;
+		   rcin.alc = ALC_ALPHA | ALC_NUMERIC | ALC_GESTURE ;
+	  //	     rcin.lRcOptions = rcin.lRcOptions | RCO_SUGGEST ;
+		   rcin.rglpdf[0] = lpdfCustomDictProc;
+		   rcin.rglpdf[1] = NULL;
+		   if ( SendMessage(hDlgItem, WM_HEDITCTL, HE_SETRC,
+					     (LONG)((LPRC)&rcin)) != TRUE )
+		   {
+		      (void)BWError ( hWnd,
+				    MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+				    , 0 , IDS_CANTRECOGBOOK );
+		   }
+		}
+		hDlgItem = GetDlgItem (hDlg , DLGGOTOCHAPEDIT );
+
+		/* Set RC preferences for this edit control */
+
+		if (SendMessage(hDlgItem, WM_HEDITCTL, HE_GETRC,
+						      (LONG)((LPRC)&rcin)))
+		{
+		   rcin.alc = ALC_NUMERIC | ALC_GESTURE ;
+	//	     rcin.lRcOptions = rcin.lRcOptions | RCO_SUGGEST ;
+		   if ( SendMessage(hDlgItem, WM_HEDITCTL, HE_SETRC,
+					     (LONG)((LPRC)&rcin)) != TRUE )
+		   {
+		    (void)BWError ( hWnd,
+				    MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+				    , 0 , IDS_CANTRECOGCHAPT );
+		   }
+		}
+		hDlgItem = GetDlgItem (hDlg , DLGGOTOVEREDIT );
+
+		/* Set RC preferences for this edit control */
+
+		if (SendMessage(hDlgItem, WM_HEDITCTL, HE_GETRC,
+						      (LONG)((LPRC)&rcin)))
+		{
+		   rcin.alc = ALC_NUMERIC | ALC_GESTURE ;
+	  //	     rcin.lRcOptions = rcin.lRcOptions | RCO_SUGGEST ;
+		   if ( SendMessage(hDlgItem, WM_HEDITCTL, HE_SETRC,
+					     (LONG)((LPRC)&rcin)) != TRUE )
+		   {
+		      (void)BWError ( hWnd,
+				    MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+				    , 0 , IDS_CANTRECOGVER );
+		   }
+		}
+	    }
+	    if ( nNumPicks > 0 )
+	    {
+	       if ( ID == 0 )
+	       {
+		   I2VER = nPickList[0];
+	       }
+	       else
+	       {
+		       OPEN_KJB ( &IUNIT10 , "KJB2P0.DAT" , OF_READ |
+					   OF_REOPEN | OF_SHARE_DENY_WRITE );
+		       GETWRD ( &I2VER , ipoint.IPOINT + nPickList[0] );
+		       _lclose ( IUNIT10 );
+	       }
+	       for ( ichap = 1 ; chap.IADCHP[ichap] < I2VER ; ichap++ );
+	       for ( ibook = 1 ; book.IADBOK[ibook] <= ichap ; ibook++ );
+	       iver = I2VER - (int)chap.IADCHP[ichap-1];
+	       ichap = ichap - (int)book.IADBOK[ibook-1] + 1;
+	       ibook--;
+	       for ( itmp = 0 ; itmp < 3 ; itmp++ ) szTemp[itmp] =
+							 books[ibook][itmp];
+	       szTemp[3] = '\0';
+	       SetDlgItemText ( hDlg , DLGGOTOBOOKEDIT , (LPSTR)&szTemp[0] );
+	       SetDlgItemInt ( hDlg , DLGGOTOCHAPEDIT , ichap , FALSE );
+	       SetDlgItemInt ( hDlg , DLGGOTOVEREDIT , iver , FALSE );
+	    }
+	    return(TRUE);
+
+	case WM_COMMAND:
+	    switch (wParam)
+	    {
+
+	    case IDOK:
+		/*  process book field	*/
+LabIDOK:
+		if ( !bValidateBookItem ( hDlg , (LPINT)&ibook ) )
+		{
+		   // error !
+		   (void)BWError ( hWnd,
+				    MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+				    , 0 , IDS_BADBOOK );
+		   return TRUE;
+		}
+
+		/*  process chapter field  */
+		ichap = GetDlgItemInt (hDlg , DLGGOTOCHAPEDIT , &bTrans ,
+								     FALSE );
+                if ( !bTrans )
+                {
+                    // error !
+		    (void)BWError ( hWnd,
+				    MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+				    , 0 , IDS_BADCHAPT );
+                    return TRUE;
+                }
+
+                if ( ichap == 0 )
+                {
+                    // error !
+		    (void)BWError ( hWnd,
+				    MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+				    , 0 , IDS_CHAPT0 );
+                    return TRUE;
+                }
+
+		if ( ichap > ( (int)book.IADBOK[ibook+1] -
+                               (int)book.IADBOK[ibook] ) )
+                {
+                    // error !
+		    (void)BWError ( hWnd,
+				    MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+				    , 0 , IDS_CHAPT2BIG );
+                    return TRUE;
+                }
+
+		/*  process verse field  */
+		iver = GetDlgItemInt (hDlg , DLGGOTOVEREDIT , &bTrans ,
+								     FALSE );
+                if ( !bTrans )
+                {
+                    // error !
+		    (void)BWError ( hWnd,
+				    MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+				    , 0 , IDS_BADVERSE );
+                    return TRUE;
+                }
+
+                if ( iver == 0 )
+                {
+                    // error !
+		    (void)BWError ( hWnd,
+				    MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+				    , 0 , IDS_VERSE0 );
+                    return TRUE;
+                }
+
+		if ( iver >
+		      ( (int)chap.IADCHP[(int)book.IADBOK[ibook]+ichap-1] -
+			(int)chap.IADCHP[(int)book.IADBOK[ibook]+ichap-2] ) )
+                {
+                    // error !
+		    (void)BWError ( hWnd,
+				    MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+				    , 0 , IDS_VERSE2BIG );
+                    return TRUE;
+                }
+
+		nGoToRef = iver +
+			   (int)chap.IADCHP[(int)book.IADBOK[ibook]+ichap-2];
+		if ( nGoToRef > 4 * VerseRefBufSize )
+		{
+		    nTopIRRef = nGoToRef - 3 * VerseRefBufSize;
+		}
+		else
+		{
+		    nTopIRRef = nGoToRef + 3 * VerseRefBufSize;
+		}
+		ID = 0;
+		I2NREF = (int)chap.IADCHP[(int)book.IADBOK[67]-1];
+		ICAP = FALSE;
+		IR = IVSG = IVS = IVE = IVW = 0;
+		ucGoToLine = 1;
+		nTOS = -3;
+		bValidBuffer = FALSE;
+		nNumPicks = 0;
+
+		SetScrollRange ( hWnd , SB_VERT , 1 , I2NREF , FALSE );
+		SetScrollPos   ( hWnd , SB_VERT , nGoToRef , TRUE );
+		InvalidateRect ( hWnd, NULL, TRUE);
+		UpdateWindow (hWnd);
+
+		EndDialog(hDlg,NULL);
+		return(TRUE);
+
+	    case DLGGOTOBOOKEDIT:
+		switch ( HIWORD(lParam) )
+		{
+		case EN_CHANGE:
+		    /*	check the book field  */
+		    if ( bValidateBookItem ( hDlg , (LPINT)&ibook ) )
+		    {
+IsValidBook:
+		       hDlgItem = GetDlgItem (hDlg , DLGGOTOKEYPAD );
+		       EnableWindow ( hDlgItem , TRUE );
+
+		       wsprintf ( szTemp , szFmt1 ,
+					     ( (int)book.IADBOK[ibook+1] -
+					       (int)book.IADBOK[ibook] ) );
+		       SetDlgItemText ( hDlg , DLGGOTOCHAPMAX ,
+							    (LPSTR)szTemp );
+		       ichap = GetDlgItemInt (hDlg , DLGGOTOCHAPEDIT ,
+							  &bTrans , FALSE );
+		       if ( !bTrans )
+		       {
+			   // empty chapter box!
+			   SetDlgItemText ( hDlg , DLGGOTOVERMAX ,
+							    (LPSTR)"" );
+			   SetDlgItemText ( hDlg , DLGGOTOVEREDIT ,
+							    (LPSTR)"" );
+			   break;
+		       }
+
+		       if ( ichap <= 0 ||
+				    ( ichap > ( (int)book.IADBOK[ibook+1] -
+						(int)book.IADBOK[ibook] ) ) )
+		       {
+			   SetDlgItemText ( hDlg , DLGGOTOVERMAX ,
+							    (LPSTR)"" );
+			   SetDlgItemText ( hDlg , DLGGOTOCHAPEDIT ,
+							    (LPSTR)"" );
+			   SetDlgItemText ( hDlg , DLGGOTOVEREDIT ,
+							    (LPSTR)"" );
+			   break;
+		       }
+
+		       // we have a valid chapter! set the max verse field...
+		       wsprintf ( szTemp , szFmt1 ,
+		       ( (int)chap.IADCHP[(int)book.IADBOK[ibook]+ichap-1] -
+			 (int)chap.IADCHP[(int)book.IADBOK[ibook]+ichap-2] ) );
+		       SetDlgItemText ( hDlg , DLGGOTOVERMAX ,
+							    (LPSTR)szTemp );
+		       iver = GetDlgItemInt (hDlg , DLGGOTOVEREDIT ,
+							   &bTrans , FALSE );
+		       if ( !bTrans )
+		       {
+			   // empty verse box!
+			   break;
+		       }
+
+		       if ( iver <= 0 || iver >
+		       ( (int)chap.IADCHP[(int)book.IADBOK[ibook]+ichap-1] -
+			 (int)chap.IADCHP[(int)book.IADBOK[ibook]+ichap-2] ) )
+		       {
+			   SetDlgItemText ( hDlg , DLGGOTOVEREDIT ,
+							    (LPSTR)"" );
+			   break;
+		       }
+
+		    // DLGGOTOVERMAX
+		    }
+		    else
+		    {
+		       hDlgItem = GetDlgItem (hDlg , DLGGOTOKEYPAD );
+		       EnableWindow ( hDlgItem , FALSE );
+		       SetDlgItemText ( hDlg , DLGGOTOCHAPMAX ,
+							    (LPSTR)"" );
+		       SetDlgItemText ( hDlg , DLGGOTOVERMAX ,
+							    (LPSTR)"" );
+		       SetDlgItemText ( hDlg , DLGGOTOCHAPEDIT ,
+							    (LPSTR)"" );
+		       SetDlgItemText ( hDlg , DLGGOTOVEREDIT ,
+							    (LPSTR)"" );
+		    }
+		    if ( wParam == DLGGOTOBOOKBTN ) return(TRUE);
+		    break;
+
+		case EN_SETFOCUS:
+		    nGotoFocus=DLGGOTOBOOKEDIT;
+		    break;
+
+		default:
+		    break;
+		}
+		break;
+
+	    case DLGGOTOCHAPEDIT:
+		switch ( HIWORD(lParam) )
+		{
+		case EN_CHANGE:
+		    // enable keypad
+		    hDlgItem = GetDlgItem (hDlg , DLGGOTOKEYPAD );
+		    EnableWindow ( hDlgItem , TRUE );
+
+		    /*	check the book field  */
+		    if ( bValidateBookItem ( hDlg , (LPINT)&ibook ) )
+		    {
+		       ichap = GetDlgItemInt (hDlg , DLGGOTOCHAPEDIT ,
+							  &bTrans , FALSE );
+		       if ( !bTrans )
+		       {
+			   // empty chapter box!
+			   SetDlgItemText ( hDlg , DLGGOTOVERMAX ,
+							    (LPSTR)"" );
+			   SetDlgItemText ( hDlg , DLGGOTOVEREDIT ,
+							    (LPSTR)"" );
+			   break;
+		       }
+
+		       if ( ichap <= 0 ||
+				    ( ichap > ( (int)book.IADBOK[ibook+1] -
+						(int)book.IADBOK[ibook] ) ) )
+		       {
+			   SetDlgItemText ( hDlg , DLGGOTOVERMAX ,
+							    (LPSTR)"" );
+			   SetDlgItemText ( hDlg , DLGGOTOVEREDIT ,
+							    (LPSTR)"" );
+			   break;
+		       }
+
+		       // we have a valid chapter! set the max verse field...
+		       wsprintf ( szTemp , szFmt1 ,
+		       ( (int)chap.IADCHP[(int)book.IADBOK[ibook]+ichap-1] -
+			 (int)chap.IADCHP[(int)book.IADBOK[ibook]+ichap-2] ) );
+		       SetDlgItemText ( hDlg , DLGGOTOVERMAX ,
+							    (LPSTR)szTemp );
+		       iver = GetDlgItemInt (hDlg , DLGGOTOVEREDIT ,
+							   &bTrans , FALSE );
+		       if ( !bTrans )
+		       {
+			   // empty verse box!
+			   break;
+		       }
+
+		       if ( iver <= 0 || iver >
+		       ( (int)chap.IADCHP[(int)book.IADBOK[ibook]+ichap-1] -
+			 (int)chap.IADCHP[(int)book.IADBOK[ibook]+ichap-2] ) )
+		       {
+			   SetDlgItemText ( hDlg , DLGGOTOVEREDIT ,
+							    (LPSTR)"" );
+			   break;
+		       }
+		    }
+		    else
+		    {
+		       SetDlgItemText ( hDlg , DLGGOTOCHAPMAX ,
+							    (LPSTR)"" );
+		       SetDlgItemText ( hDlg , DLGGOTOVERMAX ,
+							    (LPSTR)"" );
+		    }
+		    break;
+
+		case EN_SETFOCUS:
+		    nGotoFocus=DLGGOTOCHAPEDIT;
+		    break;
+
+		default:
+		    break;
+		}
+		break;
+
+	    case DLGGOTOVEREDIT:
+		switch ( HIWORD(lParam) )
+		{
+		case EN_SETFOCUS:
+		    nGotoFocus=DLGGOTOVEREDIT;
+		    break;
+
+		default:
+		    break;
+		}
+		break;
+
+	    case DLGGOTOBOOKBTN:
+		/* Bring up the books dialog box */
+		lpProc = (DLGPROC)MakeProcInstance ((FARPROC)BooksDlg,
+								      hInst);
+		ibook = DialogBox (hInst, "DlgBooks", hDlg, lpProc);
+		FreeProcInstance ((FARPROC)lpProc);
+		if ( ibook == NULL ) return (TRUE);
+		for ( itmp = 0 ; itmp < 3 ; itmp++ )
+					      szTemp[itmp]=books[ibook][itmp];
+		szTemp[3] = '\0';
+		SetDlgItemText ( hDlg , DLGGOTOBOOKEDIT , (LPSTR)&szTemp[0] );
+		goto IsValidBook;
+		break;
+
+	    case DLGGOTOKEYPAD:
+		/* Bring up the keypad dialog box */
+		lpProc = (DLGPROC)MakeProcInstance ((FARPROC)KeypadDlg,
+								      hInst);
+		nReturnValue = DialogBox (hInst, "DlgKeypad", hDlg, lpProc);
+		FreeProcInstance ((FARPROC)lpProc);
+		if ( (BOOL)nReturnValue ) goto LabIDOK;
+		return(TRUE);
+		break;
+
+	    case IDCANCEL:
+		EndDialog(hDlg,NULL);
+		return(TRUE);
+		break;
+	    }
+	    break;
+    }
+    return(FALSE);
+}
+
+#pragma  alloc_text( SEG4, bValidateBookItem )
+/****************************************************************************
+ *									    *
+ *  FUNCTION   : bValidateBookItem ( hDlg , ibook )			    *
+ *									    *
+ *  PURPOSE    : function to check for valid book name			    *
+ *									    *
+ ****************************************************************************/
+BOOL FAR PASCAL bValidateBookItem ( HWND hDlg , LPINT ibook )
+
+{
+    int I;
+
+    for ( I = 0 ; I < 5 ; I++ ) AWORD[I] = '\0';
+    GetDlgItemText (hDlg , DLGGOTOBOOKEDIT , &AWORD[0] , 5 );
+    AnsiUpperBuff ( (LPSTR)&AWORD[0] , (WORD)5 );
+
+    *ibook = 0;
+    for ( *ibook = 1 ; *ibook <= 66 ; (*ibook)++ )
+    {
+	for ( I = 0 ; I < 3 ; I++ )
+	    if ( books[*ibook][I] != AWORD[I] ) goto skipin;
+	goto skipout;
+skipin: continue;
+    }
+    return ( FALSE );
+
+skipout:
+    return ( TRUE );
+}
+
+#pragma  alloc_text( SEG5, BooksDlg )
+/****************************************************************************
+ *									    *
+ *  FUNCTION   : BooksDlg (hDlg, message, wParam, lParam)		    *
+ *									    *
+ *  PURPOSE    : Dialog function for the books dialog box.		    *
+ *									    *
+ ****************************************************************************/
+BOOL CALLBACK _export BooksDlg(hDlg, message, wParam, lParam)
+
+HWND hDlg;
+unsigned message;
+WORD wParam;
+LONG lParam;
+
+{
+int isBook, nButtonsInRow, isButtonWidth, isButtonHeight, nNumberRows;
+int isRow, isCol, ijj, cxTotal, cyTotal;
+char szBookName[]="   \0";
+static COLORREF dwColor = RGB ( 128, 128, 128);
+static HBRUSH hBrush;
+POINT point;
+HDC    hdc;
+
+    switch (message)
+    {
+	case WM_INITDIALOG:
+	    hdc = GetDC ( hDlg );
+	    if ( GetDeviceCaps ( hdc , PLANES ) < 4 ) dwColor =
+					       GetSysColor ( COLOR_BTNFACE );
+	    ReleaseDC ( hDlg , hdc );
+	    hBrush = CreateSolidBrush ( dwColor );
+
+	    isButtonWidth = 6 * cxChar;
+	    isButtonHeight = 7 * cyChar / 4;
+	    nButtonsInRow = min(66, ( cxScreen - 2 * cxDlgFrame - 2 )
+							   / isButtonWidth );
+	    nNumberRows = 66 / nButtonsInRow + 1;
+	    if ( 66 % nButtonsInRow == 0 ) nNumberRows--;
+	    cxTotal = nButtonsInRow * isButtonWidth + 2 * cxDlgFrame + 2;
+	    cyTotal = nNumberRows * isButtonHeight + 2 * cyDlgFrame +
+							       cyCaption + 1;
+	    if ( cyTotal > cyScreen )
+	    {
+		      (void)BWError
+		      ( hWnd, MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION , 1 ,
+							   IDS_SMALLSCREEN );
+	    }
+	    MoveWindow (hDlg, max( 0, (cxScreen - cxTotal) / 2 ),
+	      (cyScreen - cyTotal) < 102 ? 0 : 100, cxTotal, cyTotal, TRUE );
+	    for ( isRow = 0 , isBook = 1 ; isRow < nNumberRows ; isRow++ )
+	    {
+		for ( isCol = 0 ;
+		      isCol < nButtonsInRow && isBook < 67;
+		      isCol++ , isBook++ )
+		{
+		   for ( ijj = 0 ; ijj < 3 ; ijj++ )
+					  szBookName[ijj]=books[isBook][ijj];
+		   CreateWindow ( "button", (LPSTR)&szBookName[0],
+				   WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON |
+				   WS_TABSTOP,
+				   isButtonWidth * isCol,
+				   isButtonHeight * isRow,
+				   isButtonWidth, isButtonHeight,
+				   hDlg, isBook + 10,
+				   hInst, NULL);
+		}
+	    }
+	    return(TRUE);
+	    break;
+
+	case WM_COMMAND:
+	    if ( wParam == IDCANCEL )
+	    {
+		EndDialog(hDlg,NULL);
+		return(TRUE);
+	    }
+
+	    if ( wParam > 10 && wParam < 77 )
+	    {
+	       nGotoFocus = DLGGOTOCHAPEDIT;
+	       EndDialog(hDlg,(int)wParam-10);
+	    }
+	    else
+	    {
+	       (void)BWError ( hWnd, MB_APPLMODAL | MB_OK |
+				   MB_ICONEXCLAMATION , 1 , IDS_BADBOOKARG );
+	    }
+	    return(TRUE);
+	    break;
+
+	case WM_PAINT:
+	    PaintTheDlg ( hDlg );
+	    break;
+
+	case WM_DESTROY:
+	    DeleteObject ( hBrush );
+	    break;
+
+	case WM_CTLCOLOR:
+	    if (HIWORD (lParam) == CTLCOLOR_BTN)
+	    {
+		SetBkColor ( wParam, dwColor );
+		UnrealizeObject ( hBrush );
+		point.x = point.y = 0;
+		ClientToScreen ( hDlg, &point );
+		SetBrushOrg ( wParam, point.x, point.y );
+		return ((DWORD) hBrush);
+	    }
+	    break;
+
+	default:
+	    break;
+    }
+    return(FALSE);
+}
+
+#pragma  alloc_text( SEG5, PaintTheDlg )
+VOID NEAR PaintTheDlg ( HWND hDlg )
+{
+COLORREF dwColor = RGB ( 128, 128, 128);
+HBRUSH hBrush;
+HDC    hdc;
+PAINTSTRUCT ps;
+HPEN hPen;
+
+hdc = BeginPaint ( hDlg , &ps );
+if ( GetDeviceCaps ( hdc , PLANES ) < 4 ) dwColor =
+					       GetSysColor ( COLOR_BTNFACE );
+hBrush = CreateSolidBrush ( dwColor );
+hBrush = SelectObject ( hdc, hBrush );
+hPen = CreatePen ( PS_SOLID , 0 , dwColor );
+hPen = SelectObject ( hdc, hPen );
+Rectangle ( hdc, ps.rcPaint.left, ps.rcPaint.top, ps.rcPaint.right,
+							 ps.rcPaint.bottom );
+DeleteObject ( SelectObject ( hdc, hBrush ) );
+DeleteObject ( SelectObject ( hdc, hPen ) );
+EndPaint ( hDlg, &ps );
+}
+
+#pragma  alloc_text( SEG5, KeypadDlg )
+/****************************************************************************
+ *									    *
+ *  FUNCTION   : KeypadDlg (hDlg, message, wParam, lParam)		    *
+ *									    *
+ *  PURPOSE    : Dialog function for the Go To dialog box.		    *
+ *									    *
+ ****************************************************************************/
+BOOL CALLBACK _export KeypadDlg(hDlg, message, wParam, lParam)
+
+HWND hDlg;
+unsigned message;
+WORD wParam;
+LONG lParam;
+
+{
+HWND hwndParent;
+int nNumChar;
+char szText[6];
+HWND hDlgItem;
+
+    switch (message)
+    {
+	case WM_INITDIALOG:
+	    return(TRUE);
+
+	case WM_COMMAND:
+	    if ( wParam == IDCANCEL )
+	    {
+		EndDialog(hDlg,(int)FALSE);
+		return(TRUE);
+	    }
+
+	    if ( wParam > DLGKEYPAD9 )
+	    {
+	       switch (wParam)
+	       {
+	       case DLGKEYPADBKSP:
+		   hwndParent = GetParent (hDlg );
+		   if ( nGotoFocus == DLGGOTOBOOKEDIT )
+						nGotoFocus = DLGGOTOCHAPEDIT;
+		   nNumChar = (int)SendDlgItemMessage(hwndParent, nGotoFocus,
+			     WM_GETTEXT, (WORD)4, (DWORD)(LPSTR)&szText[0] );
+		   if ( nNumChar > 0 )
+		   {
+		      szText[nNumChar-1] = '\0';
+		      SendDlgItemMessage(hwndParent, nGotoFocus, WM_SETTEXT,
+					    NULL, (DWORD)(LPSTR)&szText[0] );
+		      hDlgItem = GetDlgItem (hwndParent , nGotoFocus );
+		      SendMessage (hwndParent, WM_COMMAND, nGotoFocus,
+					      MAKELONG(hDlgItem,EN_CHANGE) );
+		   }
+		   break;
+
+	       case DLGKEYPADTAB:
+		   switch (nGotoFocus)
+		   {
+		   case DLGGOTOBOOKEDIT:
+		      nGotoFocus = DLGGOTOCHAPEDIT;
+		      break;
+
+		   case DLGGOTOCHAPEDIT:
+		      nGotoFocus = DLGGOTOVEREDIT;
+		      break;
+
+		   case DLGGOTOVEREDIT:
+		      nGotoFocus = DLGGOTOBOOKEDIT;
+		      break;
+
+		   default:
+		      nGotoFocus = DLGGOTOCHAPEDIT;
+		      break;
+		   }
+		   break;
+
+	       case DLGKEYPADCANCEL:
+		   EndDialog(hDlg,(int)FALSE);
+		   break;
+
+	       case DLGKEYPADENTER:
+		   EndDialog(hDlg,(int)TRUE);
+		   break;
+
+	       default:
+		   break;
+	       }
+	    }
+	    else
+	    {
+	       if ( wParam < DLGKEYPAD0 || nGotoFocus == 0 ) return (TRUE);
+	       hwndParent = GetParent (hDlg );
+	       if ( nGotoFocus == DLGGOTOBOOKEDIT )
+					       nGotoFocus = DLGGOTOCHAPEDIT;
+	       nNumChar = (int)SendDlgItemMessage(hwndParent, nGotoFocus,
+			    WM_GETTEXT, (WORD)5, (DWORD)(LPSTR)&szText[0] );
+	       if ( nNumChar > 2 ) nNumChar = 2;
+	       szText[nNumChar] = (char)( (WORD)'0' + wParam -
+							 (WORD)DLGKEYPAD0 );
+	       szText[nNumChar+1] = '\0';
+	       SendDlgItemMessage(hwndParent, nGotoFocus, WM_SETTEXT,
+					   NULL, (DWORD)(LPSTR)&szText[0] );
+	       hDlgItem = GetDlgItem (hwndParent , nGotoFocus );
+	       SendMessage (hwndParent, WM_COMMAND, nGotoFocus,
+					     MAKELONG(hDlgItem,EN_CHANGE) );
+	    }
+	    return(TRUE);
+	    break;
+    }
+    return(FALSE);
+}
+/****************************************************************************
+ *									    *
+ *  FUNCTION   : Bible4wPaint ( hwnd )					    *
+ *									    *
+ *  PURPOSE    : Handles the repainting of the main app's client area.      *
+ *									    *
+ ****************************************************************************/
+void FAR PASCAL Bible4wPaint (hwnd)
+HWND hwnd;
+{
+    PAINTSTRUCT ps;
+    int 	line;
+    POINT	pt;
+    TEXTMETRIC	tm;
+//    HFONT	  hFont;
+    int i;
+
+    hdc = BeginPaint (hwnd, (LPPAINTSTRUCT)&ps);
+
+    OPEN_KJB ( &IUNIT10 , "KJB2P0.DAT" , OF_READ | OF_REOPEN
+					| OF_SHARE_DENY_WRITE );
+    hpIWS = ( long int huge * )LockResource ( hIWS );
+    hpWORDS = ( char huge * )LockResource ( hWORDS );
+    lpBuffer = GlobalLock ( hDCBuffer );
+//    hFont = CreateFont ( 16 , 4 , 0 , 0 , 400 , 0 , 0 , 0 , ANSI_CHARSET ,
+//	      OUT_DEFAULT_PRECIS , CLIP_DEFAULT_PRECIS , DRAFT_QUALITY ,
+//	      DEFAULT_PITCH | FF_DECORATIVE , "Miami" );
+//    if ( hFont != NULL ) hFont = SelectObject ( hdc , hFont );
+    GetTextMetrics ( hdc , &tm );
+    cxChar = tm.tmAveCharWidth;
+    cxCaps = ( tm.tmPitchAndFamily & 1 ? 3 : 2 ) * pt.x / 2;
+    cyChar = tm.tmHeight + tm.tmExternalLeading;
+    glocyChar = cyChar;
+    GetClientRect (hwnd, (LPRECT)&rc);
+
+    if ( nTOS < 0 || !bValidBuffer ) MakeBufValid ();
+
+   /**************************Re-Paint**********************************/
+
+    line = 0;
+    i = nTOS;
+
+    while ( line < rc.bottom )
+    {
+	TextOut ( hdc , 0 , line ,
+		  lpBuffer + ( i * nNumColsInBuffer ) ,
+		  (int)BufPoint[i].length );
+	if ( BufPoint[i].picked ) BitBlt ( hdc , rc.left , line ,
+		       rc.right - rc.left + 1 , cyChar , NULL , NULL , NULL ,
+								 DSTINVERT );
+	line += glocyChar;
+	if ( i == nBOB ) goto Break2;
+	i = BufPoint[i].forward;
+    }
+Break2:
+    if ( ( ( LLDist ( nTOB , nTOS ) < (int)( (float)nNumLinesInBuffer *
+						       1.0 / 3.5 ) ) &&
+	 ( BufPoint[nTOB].refnum != 1 || BufPoint[nTOB].line != 1 ) ) ||
+	 ( ( LLDist ( nTOS , nBOB ) < (int)( (float)nNumLinesInBuffer *
+						       2.0 / 3.5 ) ) &&
+				 ( BufPoint[nBOB].refnum != I2NREF ) ) )
+				    {
+					bValidBuffer = FALSE;
+					nGoToRef = BufPoint[nTOS].refnum;
+					ucGoToLine = BufPoint[nTOS].line;
+					nTOS = -3;
+					MakeBufValid ();
+				    }
+
+
+    _lclose ( IUNIT10 );
+    UnlockResource ( hIWS );
+    UnlockResource ( hWORDS );
+    GlobalUnlock   ( hDCBuffer );
+//    if ( hFont != NULL ) DeleteObject ( SelectObject ( hdc , hFont ) );
+////	if ( hFont != NULL ) SelectObject ( hdc , hFont );
+    EndPaint(hwnd, (LPPAINTSTRUCT)&ps);
+}
+
+void NEAR MakeBufValid ( void )
+{
+int iIR , i , nNumLines , nTOSRef , nKeep, itIR, nOldTop;
+unsigned char nTOSLine;
+HCURSOR hCursor;
+long int IAD;
+
+	hCursor = SetCursor ( LoadCursor ( NULL , IDC_WAIT ) );
+	ShowCursor ( TRUE );
+
+	nOldTop   = nTopIRRef;
+	if ( nTOS == -3 )
+	{
+	    nTopIRRef = nGoToRef -
+				(int)( (float)VerseRefBufSize * 1.25 / 3.5 );
+	    if ( nTopIRRef < 1 ) goto Type1;
+	    if ( ( nTopIRRef + VerseRefBufSize ) > I2NREF ) goto Type2;
+	    if ( abs ( nOldTop - nTopIRRef ) < VerseRefBufSize )
+	    {
+		if ( ( nOldTop - nTopIRRef ) > 0 )
+		{
+		    for ( iIR = VerseRefBufSize - nOldTop + nTopIRRef - 1 ,
+				      itIR = VerseRefBufSize - 1 ; iIR >= 0 ;
+							     iIR-- , itIR-- )
+		    {
+			VerseRefs[itIR] = VerseRefs[iIR];
+		    }
+		    for ( IR = nTopIRRef , iIR = 0 ; iIR <= itIR ;
+							       IR++ , iIR++ )
+		    {
+			if ( ID == 0 )
+			{
+			    VerseRefs[iIR].VerseNum = (int)IR;
+			}
+			else
+			{
+			    GETWRD ( &VerseRefs[iIR].VerseNum ,
+							ipoint.IPOINT + IR );
+			}
+			VerseRefs[iIR].picked = CheckPickList ( (int)IR );
+		    }
+		    for ( iIR = 0 ; iIR <= itIR ; iIR++ )
+		    {
+			I2VER = VerseRefs[iIR].VerseNum;
+			IAD = 11 + ( (long int)I2VER - 1 ) * 2;
+			GETWRD ( &hilo.I2HILO[0] , IAD );
+			IAD = IAD + 1;
+			GETWRD ( &hilo.I2HILO[1] , IAD );
+			IAD = IAD + 1;
+			VerseRefs[iIR].VerseStart = hilo.I4HILO;
+			GETWRD ( &hilo.I2HILO[0] , IAD );
+			IAD = IAD + 1;
+			GETWRD ( &hilo.I2HILO[1] , IAD );
+			VerseRefs[iIR].VerseEnd = hilo.I4HILO - 1;
+		    }
+		}
+		else
+		{
+		    for ( itIR = 0 , iIR = ( nTopIRRef - nOldTop ) ;
+				    iIR < VerseRefBufSize ; itIR++ , iIR++ )
+		    {
+			VerseRefs[itIR] = VerseRefs[iIR];
+		    }
+		    for ( IR = nTopIRRef + itIR , iIR = itIR ;
+				       IR <= I2NREF , iIR < VerseRefBufSize ;
+							       IR++ , iIR++ )
+		    {
+			if ( ID == 0 )
+			{
+			    VerseRefs[iIR].VerseNum = (int)IR;
+			}
+			else
+			{
+			    GETWRD ( &VerseRefs[iIR].VerseNum ,
+							ipoint.IPOINT + IR );
+			}
+			VerseRefs[iIR].picked = CheckPickList ( (int)IR );
+		    }
+		    for ( iIR = itIR ; iIR < VerseRefBufSize ; iIR++ )
+		    {
+			I2VER = VerseRefs[iIR].VerseNum;
+			IAD = 11 + ( (long int)I2VER - 1 ) * 2;
+			GETWRD ( &hilo.I2HILO[0] , IAD );
+			IAD = IAD + 1;
+			GETWRD ( &hilo.I2HILO[1] , IAD );
+			IAD = IAD + 1;
+			VerseRefs[iIR].VerseStart = hilo.I4HILO;
+			GETWRD ( &hilo.I2HILO[0] , IAD );
+			IAD = IAD + 1;
+			GETWRD ( &hilo.I2HILO[1] , IAD );
+			VerseRefs[iIR].VerseEnd = hilo.I4HILO - 1;
+		    }
+		}
+	    }
+	    else
+	    {
+		for ( IR = nTopIRRef , iIR = 0 ;
+				     IR <= I2NREF && iIR < VerseRefBufSize ;
+							      IR++ , iIR++ )
+		    {
+			if ( ID == 0 )
+			{
+			    VerseRefs[iIR].VerseNum = (int)IR;
+			}
+			else
+			{
+			    GETWRD ( &VerseRefs[iIR].VerseNum ,
+							ipoint.IPOINT + IR );
+			}
+			VerseRefs[iIR].picked = CheckPickList ( (int)IR );
+		    }
+		for ( iIR = 0 ; iIR < VerseRefBufSize ; iIR++ )
+		{
+		    I2VER = VerseRefs[iIR].VerseNum;
+		    IAD = 11 + ( (long int)I2VER - 1 ) * 2;
+		    GETWRD ( &hilo.I2HILO[0] , IAD );
+		    IAD = IAD + 1;
+		    GETWRD ( &hilo.I2HILO[1] , IAD );
+		    IAD = IAD + 1;
+		    VerseRefs[iIR].VerseStart = hilo.I4HILO;
+		    GETWRD ( &hilo.I2HILO[0] , IAD );
+		    IAD = IAD + 1;
+		    GETWRD ( &hilo.I2HILO[1] , IAD );
+		    VerseRefs[iIR].VerseEnd = hilo.I4HILO - 1;
+		}
+	    }
+	}
+
+	if ( nTOS == -2 )
+	{
+Type2:
+	    nTopIRRef = max ( 1 , I2NREF - VerseRefBufSize + 1 );
+	    for ( IR = nTopIRRef , iIR = 0 ;
+		  IR <= I2NREF && iIR < VerseRefBufSize ;
+		  IR++ , iIR++ )
+		{
+		    if ( ID == 0 )
+		    {
+			VerseRefs[iIR].VerseNum = (int)IR;
+		    }
+		    else
+		    {
+			GETWRD ( &VerseRefs[iIR].VerseNum ,
+							ipoint.IPOINT + IR );
+		    }
+		    VerseRefs[iIR].picked = CheckPickList ( (int)IR );
+		}
+	    for ( IR = nTopIRRef , iIR = 0 ;
+		  IR <= I2NREF && iIR < VerseRefBufSize ;
+		  IR++ , iIR++ )
+		{
+	I2VER = VerseRefs[iIR].VerseNum;
+	IAD = 11 + ( (long int)I2VER - 1 ) * 2;
+	GETWRD ( &hilo.I2HILO[0] , IAD );
+	IAD = IAD + 1;
+	GETWRD ( &hilo.I2HILO[1] , IAD );
+	IAD = IAD + 1;
+	VerseRefs[iIR].VerseStart = hilo.I4HILO;
+	GETWRD ( &hilo.I2HILO[0] , IAD );
+	IAD = IAD + 1;
+	GETWRD ( &hilo.I2HILO[1] , IAD );
+	VerseRefs[iIR].VerseEnd = hilo.I4HILO - 1;
+		}
+	}
+
+	if ( nTOS == -1 )
+	{
+Type1:
+	    nTopIRRef = 1;
+	    for ( IR = nTopIRRef , iIR = 0 ;
+		  IR <= I2NREF && iIR < VerseRefBufSize ;
+		  IR++ , iIR++ )
+		{
+		    if ( ID == 0 )
+		    {
+			VerseRefs[iIR].VerseNum = (int)IR;
+		    }
+		    else
+		    {
+			GETWRD ( &VerseRefs[iIR].VerseNum ,
+							ipoint.IPOINT + IR );
+		    }
+		    VerseRefs[iIR].picked = CheckPickList ( (int)IR );
+		}
+	    for ( IR = nTopIRRef , iIR = 0 ;
+		  IR <= I2NREF && iIR < VerseRefBufSize ;
+		  IR++ , iIR++ )
+		{
+	I2VER = VerseRefs[iIR].VerseNum;
+	IAD = 11 + ( (long int)I2VER - 1 ) * 2;
+	GETWRD ( &hilo.I2HILO[0] , IAD );
+	IAD = IAD + 1;
+	GETWRD ( &hilo.I2HILO[1] , IAD );
+	IAD = IAD + 1;
+	VerseRefs[iIR].VerseStart = hilo.I4HILO;
+	GETWRD ( &hilo.I2HILO[0] , IAD );
+	IAD = IAD + 1;
+	GETWRD ( &hilo.I2HILO[1] , IAD );
+	VerseRefs[iIR].VerseEnd = hilo.I4HILO - 1;
+		}
+	}
+
+	if ( !bValidBuffer )
+	{
+//   hCursor = SetCursor ( LoadCursor ( NULL , IDC_WAIT ) );
+//   ShowCursor ( TRUE );
+	    IR = max ( 1 , nGoToRef -
+			   (int)( (float)nNumLinesInBuffer * 1.25 / 3.5 ) );
+	    IVSG = IVS = IVE = 0;
+	    IVW = 0;
+	    nRefLine = 0;
+	    nTOSRef = nGoToRef;
+	    nTOSLine = ucGoToLine;
+	    LLConnect ( nTOB , nTBOB );
+	    i = 0;
+	    nNumLines = 0;
+	    BufPoint[i].refnum = 32760;
+	    BufPoint[i].line   = 255;
+	    while ( BufPoint[i].refnum != nTOSRef ||
+		    BufPoint[i].line   != nTOSLine )
+	    {
+		i = BufPoint[i].forward;
+		if ( !GetNextLine ( i , (int)IR ) )
+		{
+		    IR++;
+		    nRefLine = 0;
+		    GetNextLine ( i , (int)IR );
+		}
+		nNumLines++;
+	    }
+	    nTOS = i;
+	    nTOB = i;
+	    nKeep = min ( (int)( (float)nNumLinesInBuffer * 1.25 / 3.5 ) ,
+			  nNumLines );
+	    for ( i = 1 ; i < nKeep ; i++ ) nTOB = BufPoint[nTOB].backward;
+	    nTBOB = LLBreak ( nTOB );
+	    i = nTOS;
+//   hCursor = SetCursor ( LoadCursor ( NULL , IDC_WAIT ) );
+//   ShowCursor ( TRUE );
+//   ShowCursor ( FALSE );
+//   SetCursor ( hCursor );
+	    while ( i != nTBOB && IR <= I2NREF )
+	    {
+		i = BufPoint[i].forward;
+		if ( !GetNextLine ( i , (int)IR ) )
+		{
+		    nRefLine = 0;
+		    IR++;
+		    if ( IR <= I2NREF )
+		    {
+			GetNextLine ( i , (int)IR );
+		    }
+		    else
+		    {
+			nBOB = BufPoint[i].backward;
+		    }
+		}
+	    }
+	    if ( i == nTBOB ) nBOB = i;
+	    bValidBuffer = TRUE;
+	}
+	ShowCursor ( FALSE );
+	SetCursor ( hCursor );
+	return;
+}
+
+
+
+BOOL NEAR GetNextLine ( int i , int IR )
+{
+static unsigned char nNextCLoc;
+static unsigned int col;
+long int IS1 , IO , IOS;
+int IC1 , nWordLength , ivr , itmp;
+unsigned int is, ie, ich, ibok;
+char FAR *lpszNextBufLoc;
+static BOOL bFirstExtCall;
+static unsigned int LastStart = 0;
+
+    if ( IVW >= IVE && IVE != 0 )
+    {
+	IVW = 0;
+	return FALSE;
+    }
+
+    if ( IVW == 0 )
+    {
+	I2VER = VerseRefs[IR-nTopIRRef].VerseNum;
+	isPicked = VerseRefs[IR-nTopIRRef].picked;
+	IVSG = IVS = VerseRefs[IR-nTopIRRef].VerseStart;
+	IVE = VerseRefs[IR-nTopIRRef].VerseEnd;
+    }
+
+    nNextCLoc = 0;
+//    col = LastStart;
+    col = cxChar;
+    bFirstExtCall = TRUE;
+    lpszNextBufLoc = lpBuffer + ( i * nNumColsInBuffer );
+    for ( IVW = IVS ; IVW <= IVE ; IVW++ )
+    {
+	if ( IVW == IVSG )
+	{
+	    is = 1;
+	    ie = 67;
+	    while ( ie > is + 1 )
+	    {
+		ibok = ( ie + is ) >> 1;
+		if ( unBook2Chap[ibok] < (unsigned int)I2VER )
+		{
+		    is = ibok;
+		}
+		else
+		{
+		    ie = ibok;
+		}
+	    }
+	    if ( unBook2Chap[ie] < (unsigned int)I2VER )
+	    {
+		ibok = ie;
+	    }
+	    else
+	    {
+		ibok = is;
+	    }
+	    is = (unsigned int)book.IADBOK[ibok] - 1;
+	    ie = (unsigned int)book.IADBOK[ibok+1] - 1;
+	    while ( ie > is + 1 )
+	    {
+		ich = ( ie + is ) >> 1;
+		if ( chap.IADCHP[ich] < I2VER )
+		{
+		    is = ich;
+		}
+		else
+		{
+		    ie = ich;
+		}
+	    }
+	    if ( chap.IADCHP[ie] < I2VER )
+	    {
+		ich = ie;
+	    }
+	    else
+	    {
+		ich = is;
+	    }
+	    ivr = I2VER - (int)chap.IADCHP[ich];
+	    ich = ich - (int)book.IADBOK[ibok  ] + 2;
+	    *lpszNextBufLoc = ' ';
+	    for ( itmp = 0 ; itmp < 3 ; itmp++ ) *(lpszNextBufLoc+itmp+1) =
+							   books[ibok][itmp];
+	    nNumChars = wsprintf ( lpszNextBufLoc+4 , " %i:%i " , ich , ivr ) + 4;
+	    if ( ( nWordLength = LOWORD( GetTextExtent
+			( hdc , lpszNextBufLoc , nNumChars ) ) ) + cxChar > rc.right )
+	    {
+//		  if ( col == LastStart )
+		if ( col == (unsigned int)cxChar )
+		{
+		    while ( LOWORD( GetTextExtent ( hdc , lpszNextBufLoc , nNumChars ) ) > (WORD)rc.right )
+							       nNumChars--;
+		    nNextCLoc += nNumChars;
+		    lpszNextBufLoc += nNumChars;
+		    IVW++;
+		    goto BreakOut;
+		}
+		goto BreakOut;
+	    }
+	    nNextCLoc += nNumChars;
+	    lpszNextBufLoc += nNumChars;
+	    col = LastStart = nWordLength + cxChar;
+	}
+//	  if ( IVW == IVS ) col = LastStart;
+
+	GETWRD ( &I2WRD , IVW );
+	if ( IVW == IVSG && I2WRD == 0 )
+	{
+	    ICAP = TRUE;
+	    continue;
+	}
+	if ( IWL[I2WRD] <=  0 || IWL[I2WRD] > 127 )
+	{
+	//	 printf (
+	//	 " **** ERROR **** I,IVS,I2WRD,IWS= %li %li %i %li\n"
+	//		, I , IVS , I2WRD , IWS[I2WRD] );
+	      (void)BWError ( hWnd,
+				    MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+				    , 1 , IDS_BADDATABASE );
+	      continue;
+	}
+	IS1 = *(hpIWS+I2WRD);
+	IO = 0;
+	if ( I2WRD > 7 )
+	{
+	    *lpszNextBufLoc = ' ';
+	    IO++;
+	}
+	IOS = IO + IWL[I2WRD];
+	_fstrncpy ( lpszNextBufLoc+IO , hpWORDS+IS1 , IWL[I2WRD] );
+	if ( ICAP )
+	{
+	    IC1 = (int)*(hpWORDS+IS1);
+	    if ( IC1 > 96 ) IC1 = IC1 - 32;
+	    *(lpszNextBufLoc+IO) = (char)IC1;
+	    ICAP = FALSE;
+	}
+	if ( I2WRD < 4 )
+	{
+	    ICAP = TRUE;
+	    *(lpszNextBufLoc+IOS) = ' ';
+	    IOS++;
+	}
+	*(lpszNextBufLoc+IOS) = '\0';
+	nNumChars = (int)IOS;
+
+	if ( ( nWordLength = nNumChars * cxChar ) + col > rc.right )
+	{
+//	      if ( col == LastStart )
+	    if ( col == (unsigned int)cxChar )
+	    {
+		while ( LOWORD( GetTextExtent ( hdc , lpszNextBufLoc , nNumChars ) ) > (WORD)rc.right )
+							   nNumChars--;
+		nNextCLoc += nNumChars;
+		lpszNextBufLoc += nNumChars;
+		IVW++;
+		goto BreakOut;
+	    }
+	    if ( bFirstExtCall )
+	    {
+		col = cxChar + LOWORD( GetTextExtent ( hdc ,
+			     lpszNextBufLoc - nNextCLoc , nNextCLoc ) ) ;
+		bFirstExtCall = FALSE;
+	    }
+	    if ( ( nWordLength = LOWORD( GetTextExtent ( hdc ,
+			     lpszNextBufLoc , nNumChars ) ) ) + col >
+			     (int)rc.right ) goto BreakOut;
+	}
+	col += nWordLength;
+	nNextCLoc += nNumChars;
+	lpszNextBufLoc += nNumChars;
+    }
+BreakOut:
+    IVS = IVW;
+    *(lpBuffer + ( i * nNumColsInBuffer ) + nNextCLoc) = '\0';
+    BufPoint[i].length = nNextCLoc;
+    BufPoint[i].refnum = (int)IR;
+    nRefLine++;
+    BufPoint[i].line = nRefLine;
+    BufPoint[i].picked = isPicked;
+    return TRUE;
+ }
+
+#pragma  alloc_text( SEG6, Bible4WndProc )
+
+/****************************************************************************
+ *									    *
+ *  FUNCTION   : Bible4WndProc (hWnd, message, wParam, lParam)		    *
+ *									    *
+ *  PURPOSE    : Window function for the main app. window. Processes all the*
+ *		 menu selections and other messages.			    *
+ *									    *
+ ****************************************************************************/
+#define Frame_DefProc   DefWindowProc
+LRESULT CALLBACK _export Bible4WndProc (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    DLGPROC lpProc;
+    int nEstNumLinesOnScreen;
+    int nEstNumColsOnScreen;
+    int i , yWinScrollInc;
+    int nNewPick , j , line;
+    HDC hdc;
+
+
+
+    switch (message){
+	case WM_COMMAND:
+	    switch (wParam){
+		 case IDM_EXIT:
+		   DestroyWindow (hWnd);
+		   break;
+
+		 case IDM_HELP_INDEX:
+                   if ( !WinHelp(hWnd,szHelpFileName,HELP_INDEX,0L) )
+                   {
+		       (void)BWError ( hWnd,
+				    MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+				    , 0 , IDS_BADHELPFILE );
+                   }
+		   break;
+
+		 case IDM_HELP_KEYBOARD:
+                   if ( !WinHelp(hWnd,szHelpFileName,HELP_KEY,(DWORD)(LPSTR)"keys") )
+                   {
+		       (void)BWError ( hWnd,
+				    MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+				    , 0 , IDS_BADHELPFILE );
+                   }
+		   break;
+
+		 case  IDM_HELP_COMMANDS:
+                   if ( !WinHelp(hWnd,szHelpFileName,HELP_KEY,(DWORD)(LPSTR)"commands") )
+                   {
+		       (void)BWError ( hWnd,
+				    MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+				    , 0 , IDS_CHAPT0 );
+                   }
+		   break;
+
+		 case IDM_HELP_PROCEDURES:
+                   if ( !WinHelp(hWnd,szHelpFileName,HELP_KEY,(DWORD)(LPSTR)"procedures") )
+                   {
+		       (void)BWError ( hWnd,
+				    MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+				    , 0 , IDS_BADHELPFILE );
+                   }
+		   break;
+
+		 case IDM_HELP_HELP:
+                   if ( !WinHelp(hWnd,"WINHELP.HLP",HELP_INDEX,0L) )
+                   {
+		       (void)BWError ( hWnd,
+				    MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+				    , 0 , IDS_BADHELPFILE );
+                   }
+		   break;
+
+		 case IDM_ABOUT:
+		   /* Bring up the about dialog box */
+		   lpProc = (DLGPROC)MakeProcInstance ((FARPROC)About, hInst);
+		   DialogBox (hInst,
+			      "AboutBox",
+			      hWnd,
+			      lpProc);
+		   FreeProcInstance ((FARPROC)lpProc);
+		   break;
+
+		 case IDM_FIND:
+		   /* Bring up the Find.. dialog box */
+		   lpProc = (DLGPROC)MakeProcInstance ((FARPROC)FindDlg, hInst);
+		   if (hPenWin)
+		   {
+		      DialogBox (hInst,
+				 "PenFindBox",
+				 hWnd,
+				 lpProc);
+		   }
+		   else
+		   {
+		      DialogBox (hInst,
+				 "FindBox",
+				 hWnd,
+				 lpProc);
+		   }
+
+		   FreeProcInstance ((FARPROC)lpProc);
+		   break;
+
+		 case IDM_GOTO:
+		   /* Bring up the Go To.. dialog box */
+		   lpProc = (DLGPROC)MakeProcInstance ((FARPROC)GoToDlg, hInst);
+		   if (hPenWin)
+		   {
+		      DialogBox (hInst,
+				 "PenGoToBox",
+				 hWnd,
+				 lpProc);
+		   }
+		   else
+		   {
+		      DialogBox (hInst,
+				 "GoToBox",
+				 hWnd,
+				 lpProc);
+		   }
+
+		   FreeProcInstance ((FARPROC)lpProc);
+		   break;
+
+		 case IDM_COPY:
+		   MoveToCilpBoard ();
+		   break;
+
+	    }
+	    break;
+
+	case WM_SIZE:
+	    if (lParam)
+	    {
+		/* If window is being sized to a non zero value...
+		 */
+
+		cxClient = LOWORD(lParam);
+		cyClient = HIWORD(lParam);
+		if ( nTOS != -3 )
+		{
+		    if ( nTOS >= 0 )
+		    {
+			nGoToRef = BufPoint[nTOS].refnum;
+			ucGoToLine = 1;
+			nTOS = -3;
+		    }
+		    else
+		    {
+			nGoToRef = 1;
+			ucGoToLine = 1;
+			nTOS = -1;
+		    }
+		}
+		if ( hDCBuffer != NULL ) GlobalFree ( hDCBuffer );
+		nEstNumLinesOnScreen = cyClient / cyChar + 1;
+		nEstNumColsOnScreen  = cxClient / cxChar + 1;
+		nNumLinesInBuffer = (int)((float)nEstNumLinesOnScreen * 3.51);
+		nNumLinesInBuffer = max ( nNumLinesInBuffer , 7 );
+		nNumColsInBuffer  = (int)((float)nEstNumColsOnScreen  * 1.51);
+		nNumColsInBuffer  = max ( nNumColsInBuffer , 5 );
+                if ( ( hDCBuffer = GlobalAlloc ( GMEM_MOVEABLE ,
+                            nNumLinesInBuffer * nNumColsInBuffer ) ) == NULL ) OutOfMem ();
+		if ( nNumLinesInBuffer > VerseRefBufSize )
+		{
+		    (void)BWError ( hWnd,
+				    MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+				    , 0 , IDS_CANTRESIZE );
+                    nNumLinesInBuffer = VerseRefBufSize;
+		}
+		for ( i = 0 ; i < nNumLinesInBuffer ; i++ )
+		{
+		    BufPoint[i].forward  =
+			       (unsigned char)( ( i + 1 ) % nNumLinesInBuffer );
+		    BufPoint[i].backward =
+			       (unsigned char)( ( i - 1 + nNumLinesInBuffer ) %
+							  nNumLinesInBuffer );
+		}
+		nTOB = 0;
+		nBOB = nTBOB = nNumLinesInBuffer - 1;
+		IR = IVSG = IVS = IVE = IVW = 0;
+		bValidBuffer = FALSE;
+
+		InvalidateRect (hWnd, NULL, TRUE);
+	    }
+	    break;
+
+	case WM_PAINT:
+	    Bible4wPaint ( hWnd );
+	    break;
+
+	case WM_CREATE:
+	    OpenBible ( hWnd );
+	    break;
+
+	case WM_DESTROY:
+	    if ( hDCBuffer != NULL ) GlobalFree ( hDCBuffer );
+	    WinHelp(hWnd,szHelpFileName,HELP_QUIT,0L);
+	    if (hPenWin)
+	    {
+	       /* Unregister this app */
+	       if (RegPenApp != NULL)
+		       (*RegPenApp)(RPA_DEFAULT, FALSE);
+
+	       /* Close libraries */
+	       FreeProcInstance(lpdfCustomDictProc);
+	       FreeLibrary(hCustomDictLib);
+	       /* Close custom dictionary callback function */
+	       FreeProcInstance(lpfnLookUp);
+	    }
+
+	    PostQuitMessage (0);
+	    break;
+
+	case WM_KEYDOWN:
+	    switch ( wParam )
+	    {
+		case VK_HOME:
+		    SendMessage (hWnd, WM_VSCROLL, SB_TOP, 0L);
+		    break;
+
+		case VK_END:
+		    SendMessage (hWnd, WM_VSCROLL, SB_BOTTOM, 0L);
+		    break;
+
+		case VK_PRIOR:
+		    SendMessage (hWnd, WM_VSCROLL, SB_PAGEUP, 0L);
+		    break;
+
+		case VK_NEXT:
+		    SendMessage (hWnd, WM_VSCROLL, SB_PAGEDOWN, 0L);
+		    break;
+
+		case VK_UP:
+		    SendMessage (hWnd, WM_VSCROLL, SB_LINEUP, 0L);
+		    break;
+
+		case VK_DOWN:
+		    SendMessage (hWnd, WM_VSCROLL, SB_LINEDOWN, 0L);
+		    break;
+	    }
+	    return 0;
+
+	case WM_VSCROLL:
+	    switch ( wParam )
+	    {
+		case SB_LINEUP:
+		    if ( BufPoint[nTOS].refnum == 1 )
+		    {
+			 (void)BWError ( hWnd,
+				    MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+				    , 0 , IDS_CANTGOUP );
+			 return ( 0 );
+		    }
+		    yWinScrollInc = cyChar;
+		    nTOS = BufPoint[nTOS].backward;
+		    break;
+
+		case SB_LINEDOWN:
+		    if ( BufPoint[nTOS].refnum == I2NREF )
+		    {
+			 (void)BWError ( hWnd,
+				    MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+				    , 0 , IDS_CANTGODOWN );
+			 return ( 0 );
+		    }
+		    yWinScrollInc = -cyChar;
+		    nTOS = BufPoint[nTOS].forward;
+		    break;
+
+		case SB_PAGEUP:
+		    yWinScrollInc = 0;
+		    for ( i = 1 ; i < ( cyClient / cyChar ) ; i++ )
+		    {
+			if ( BufPoint[nTOS].refnum == 1 )
+			{
+			     (void)BWError ( hWnd,
+				    MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+				    , 0 , IDS_CANTPAGEUP );
+                             goto ScrollBreak;
+			}
+			nTOS = BufPoint[nTOS].backward;
+		    }
+		    break;
+
+		case SB_PAGEDOWN:
+		    yWinScrollInc = 0;
+		    for ( i = 1 ; i < ( cyClient / cyChar ) ; i++ )
+		    {
+			if ( BufPoint[nTOS].refnum == I2NREF )
+			{
+			     (void)BWError ( hWnd,
+				    MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+				    , 0 , IDS_CANTPAGEDOWN );
+			     goto ScrollBreak;
+			}
+			nTOS = BufPoint[nTOS].forward;
+		    }
+		    break;
+
+		case SB_THUMBPOSITION:
+		    yWinScrollInc = 0;
+		    nGoToRef = LOWORD(lParam);
+		    ucGoToLine = 1;
+		    nTOS = -3;
+		    break;
+
+		case SB_THUMBTRACK:
+		    return 0;
+		    break;
+
+		case SB_TOP:
+		    yWinScrollInc = 0;
+		    nGoToRef = 1;
+		    ucGoToLine = 1;
+		    nTOS = -1;
+		    break;
+
+		case SB_BOTTOM:
+		    yWinScrollInc = 0;
+		    nGoToRef = I2NREF;
+		    ucGoToLine = 1;
+		    nTOS = -2;
+		    break;
+
+		default:
+		    return 0;
+		    break;
+	    }
+ScrollBreak:
+	    if ( yWinScrollInc != 0 )
+	    {
+		ScrollWindow ( hWnd , 0 , yWinScrollInc , NULL , NULL );
+	    }
+	    else
+		InvalidateRect ( hWnd , NULL , TRUE );
+	    if ( nTOS < 0 )
+	    {
+		SetScrollPos ( hWnd , SB_VERT , nGoToRef , TRUE );
+		bValidBuffer = FALSE;
+	    }
+	    else
+		SetScrollPos ( hWnd , SB_VERT , BufPoint[nTOS].refnum
+								    , TRUE );
+	    UpdateWindow ( hWnd );
+	    return 0;
+	    break;
+
+	case WM_LBUTTONDOWN:
+	    hdc = GetDC ( hWnd );
+	    GetClientRect (hWnd, (LPRECT)&rc);
+	    for ( i = 0 , nNewPick = nTOS ;
+				 i < ( (int)HIWORD(lParam) / cyChar ) ; i++ )
+	    {
+		if ( nNewPick == nBOB ) break;
+		nNewPick = BufPoint[nNewPick].forward;
+	    }
+	    for ( j = nTOS , line = 0 ; line <= (int)HIWORD(lParam) ;
+							       line+=cyChar )
+	    {
+		if ( BufPoint[j].refnum == BufPoint[nNewPick].refnum )
+		{
+		    BitBlt ( hdc , rc.left , line ,
+		    rc.right - rc.left + 1 , cyChar , NULL , NULL , NULL ,
+								 DSTINVERT );
+		}
+		if ( j == nBOB ) break;
+		j = BufPoint[j].forward;
+	    }
+	    ReleaseDC ( hWnd , hdc );
+	    if ( nNumPicks > 1 )
+	    {
+		if ( wParam & MK_CONTROL )
+		{
+		    for ( j = 0 ; j < nNumPicks ; j++ )
+		    {
+			if ( nPickList[j] == BufPoint[nNewPick].refnum )
+			{
+			    for ( i = j ; i < nNumPicks ; i++ )
+			    {
+				nPickList[i] = nPickList[i+1];
+			    }
+			    nNumPicks--;
+			    nNewPick = -1;
+			    break;
+			}
+		    }
+		    if ( nNewPick != -1 )
+		    {
+			nPickList[nNumPicks] = BufPoint[nNewPick].refnum;
+			if ( nNumPicks == PICKLISTSIZE - 1 )
+			{
+			    (void)BWError ( hWnd,
+				    MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+				    , 0 , IDS_PLISTFULL );
+			    return 0;
+			}
+			nNumPicks++;
+		    }
+		}
+		else
+		{
+		    nPickList[0] = BufPoint[nNewPick].refnum;
+		    nNumPicks = 1;
+		}
+	    }
+	    else if ( nNumPicks == 1 )
+	    {
+		if ( nPickList[0] == BufPoint[nNewPick].refnum )
+		{
+		    nNumPicks = 0;
+		}
+		else
+		{
+		    if ( wParam & MK_CONTROL )
+		    {
+			nPickList[1] = BufPoint[nNewPick].refnum;
+			nNumPicks = 2;
+		    }
+		    else
+		    {
+			nPickList[0] = BufPoint[nNewPick].refnum;
+		    }
+		}
+	    }
+	    else
+	    {
+		nPickList[0] = BufPoint[nNewPick].refnum;
+		nNumPicks = 1;
+	    }
+	    i = nTOB;
+	    while ( TRUE )
+	    {
+		BufPoint[i].picked = CheckPickList ( BufPoint[i].refnum );
+		if ( i == nBOB ) break;
+		i = BufPoint[i].forward;
+	    }
+	    InvalidateRect ( hWnd , NULL , TRUE );
+	    return 0;
+	    break;
+
+	case WM_LBUTTONUP:
+	    return 0;
+	    break;
+
+	default:
+	    return DefWindowProc(hWnd, message, wParam, lParam);
+    }
+    return(NULL);
+}
+
+VOID FAR OpenBible ( hWndpar )
+HWND hWndpar;
+{
+long int LOCTOC,LOCWL,I;
+
+	NHASH = 0;
+	I2ZERO = 0;
+//	  LASTVR = 0;		  what was this used for ????
+	LASTCH = 0;
+	LASTAD = 10;
+	ITVERS = 0;
+	IRMOD = 0;
+	IRECIN = -1;
+	ID = 0;
+
+	for ( I = 1 ; I <= MAXWRD ; I ++ ) IWL[I] = 0;
+
+	LASTWD = 0;
+	LASTSB = 1;
+
+	OPEN_CLIP ( &IUNIT11 , "c9l9i9p9.scr" , OF_READWRITE | OF_CREATE
+						      | OF_SHARE_DENY_NONE );
+	_lclose ( IUNIT11 );
+
+	OPEN_KJB ( &IUNIT10 , "KJB2P0.DAT" , OF_EXIST );
+
+	OPEN_KJB ( &IUNIT10 , "KJB2P0.DAT" , OF_READ
+					    | OF_SHARE_DENY_WRITE );
+
+	LASTAD = 1;
+	CHGWRD ( AWORD , 6 , LASTAD );//	printf ( " VERSION = " );
+	LASTAD = 4;
+	I4GWRD ( &LOCTOC , LASTAD );
+	LASTAD = 6;
+	I4GWRD ( &LOCWL , LASTAD );
+	LASTAD = 8;
+	I4GWRD ( &IADOFF , LASTAD );
+
+	GETOC ( LOCTOC );
+	GETWL ( LOCWL );
+
+	_lclose ( IUNIT10 );
+
+	nGoToRef = 1 + (int)chap.IADCHP[(int)book.IADBOK[43]-1];
+
+	ID = 0;
+	I2NREF = (int)chap.IADCHP[(int)book.IADBOK[67]-1];
+	ICAP = FALSE;
+	IR = IVSG = IVS = IVE = IVW = 0;
+	ucGoToLine = 1;
+	nTOS = -3;
+	bValidBuffer = FALSE;
+
+	SetScrollRange ( hWndpar , SB_VERT , 1 , I2NREF , FALSE );
+	SetScrollPos   ( hWndpar , SB_VERT , nGoToRef , TRUE );
+
+	return;
+
+}
+
+void NEAR GETWL ( long int IAD )
+{
+long int MAXW,IAD1,I,LSTWDF,MADD,IS1,IW,IS1A,ID1,IS2;
+char temptext[40];
+
+	I4GWRD ( &MAXW , IAD );
+	if ( MAXW != MAXWRD ) wexit ( 3000 );
+	IAD1 = IAD + 2;
+	I1GWRD ( IWL , MAXW , IAD1 );
+	IAD1 = IAD1 + MAXW / 2 + ( MAXW % 2 );
+        if ( ( hIWS = LoadResource ( hInst , FindResource ( hInst , "wordsizes" ,
+                                      "WORDSIZES" ) ) ) == NULL )
+        {
+	    (void)BWError ( hWnd,
+				    MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+				    , 1 , IDS_BADDB2 );
+        }
+        if ( ( hpIWS = ( long int huge * )LockResource ( hIWS ) ) == NULL )
+        {
+	    (void)BWError ( hWnd,
+				    MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+				    , 1 , IDS_OUTOFMEM );
+        }
+	UnlockResource ( hIWS );
+	I4GWRD ( &LASTSB , IAD1 );
+	IAD1 = IAD1 + 2;
+	I4GWRD ( &LASTWD , IAD1 );
+	IAD1 = IAD1 + 2;
+	for ( I = 1 ; I <= LASTSB - 1 ; I++ )
+	{
+	    if ( I > NDIMW ) wexit ( 787 );
+//	      CHGWRD ( WORDS[I] , NLENW , IAD1 );
+	    IAD1 = IAD1 + NLENW / 2 + ( NLENW % 2 );
+	}
+	if ( LASTWD != 0 )
+	{
+	    LSTWDF = ( ( LASTWD + 1 ) / 2 ) * 2;
+//	      CHGWRD ( WORDS[LASTSB] , LSTWDF , IAD1 );
+	}
+        if ( ( hWORDS = LoadResource ( hInst , FindResource ( hInst , "wordlist" ,
+                                      "WORDLIST" ) ) ) == NULL )
+        {
+	    (void)BWError ( hWnd,
+				    MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+				    , 1 , IDS_BADDB2 );
+        }
+        if ( ( hpWORDS = ( char huge * )LockResource ( hWORDS ) ) == NULL )
+        {
+	    (void)BWError ( hWnd,
+				    MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+				    , 1 , IDS_OUTOFMEM );
+        }
+	UnlockResource ( hWORDS );
+	LASTAD = IAD1 + LASTWD / 2 + ( LASTWD % 2 ) + 1;
+	MADD = 0;
+	hpIWS = ( long int huge * )LockResource ( hIWS );
+	for ( I = 1 ; I <= MAXW ; I++ )
+	{
+	    if ( IWL[I] != 0 )		   // GO TO 3101
+	    {
+		IS1 = *(hpIWS+I);
+		if ( *(hpIWS+I) > MADD ) IW = I;
+		MADD = max ( MADD , IS1 + IWL[I] - 1 );
+	    }
+	}
+	    IS1 = *(hpIWS+IW);
+	    UnlockResource ( hIWS );
+	    IS1A = ( IS1 % NLENW );
+	    ID1 = IS1 / NLENW + 1;
+	    if ( IS1A == 0 )
+	    {
+		ID1 = ID1 - 1;
+		IS1A = NLENW;
+	    }
+	    IS2 = IS1A + IWL[IW] - 1;
+	    hpWORDS = ( char huge * )LockResource ( hWORDS );
+	    for ( I = 0 ; (unsigned char)I < IWL[IW] ; I++ )
+					     temptext[I] = *(hpWORDS+IS1+I);
+	    UnlockResource ( hWORDS );
+
+
+	return;
+}
+
+#pragma  alloc_text( SEG7, fLookUp )
+BOOL FAR PASCAL fLookUp ( LPSTR szLookUpWord , int iWordLength )
+{
+    LPSTR szTemp;
+    int iIndex,ibook,iJCK,iJCK2;
+    long int I;
+    char szBook[8];
+
+    if ( iWordLength == 0 ) return ( FALSE );
+
+    szTemp = szLookUpWord;
+
+    if ( bBookDict )
+    {
+	for ( iJCK2 = 0 ; iJCK2 < 7 , *szTemp ; iJCK2++ , szTemp++ )
+	{
+	    szBook[iJCK2] = *szTemp;
+	}
+	szBook[iJCK2] = '\0';
+	iIndex = AnsiUpperBuff ( (LPSTR)szBook , (WORD)iJCK2 );
+/* According to the documentation, AnsiUpperBuff should return the number
+   of characters that converted... When we put in 3 characters, it is
+   returning the value 32!  Therefore, we will use iJCK2 until Windows
+   is fixed.  Note that this may be a problem when we go to double
+   Byte characters.
+*/
+ //	  if ( iIndex != 3 ) return ( FALSE );
+	if ( iJCK2 != 3 ) return ( FALSE );
+	for ( ibook = 1 ; ibook <= 66 ; ibook++ )
+	{
+ //	      for ( iJCK = 0 ; iJCK < iIndex ; iJCK++ )
+	    for ( iJCK = 0 ; iJCK < iJCK2 ; iJCK++ )
+	    {
+	    if ( books[ibook][iJCK] != szBook[iJCK] ) goto Lnextbook;
+	    }
+	    return ( TRUE );
+
+Lnextbook: continue;
+	}
+	return ( FALSE );
+    }
+    else
+    {
+       LAWORD = (long int)iWordLength;
+       for ( I = 1 ; I <= LAWORD ; I++ , szTemp++ )
+       {
+	   AWORD[I] = *szTemp;
+       }
+
+       FNDWRD ( &iIndex );
+
+       if ( iIndex == 0 ) return ( FALSE );
+	   else return ( TRUE );
+    }
+}
+
+void FAR FNDWRD ( int *I2HASH )
+{
+long int IHASH,LASTC,I,ILOC;
+char *npAWORD;
+int comp;
+	IHASH = 0;
+	*I2HASH = 0;
+	LASTC = 1;
+	for ( I = 1 ; I <= LAWORD ; I++ )
+	{
+	    IHASH = IHASH + (long int)AWORD[I] * LASTC;
+	    LASTC = (int)AWORD[I];
+	}
+	IHASH = IHASH % MAXWRD;
+	if ( IHASH == 0 ) IHASH = MAXWRD;
+	goto L30;
+L20:
+	IHASH++;
+	if ( IHASH > MAXWRD ) IHASH = 1;
+L30:
+	if ( IWL[IHASH] == 0 )
+	{
+	    return;
+	}
+	else
+	{
+	    if ( IWL[IHASH] != (unsigned char)LAWORD ) goto L20;
+	    hpIWS = ( long int huge * )LockResource ( hIWS );
+	    ILOC = *(hpIWS+IHASH);
+	    UnlockResource ( hIWS );
+	    hpWORDS = ( char huge * )LockResource ( hWORDS );
+	    hpWORDS += ILOC;
+	    npAWORD = &AWORD[1];
+	    for ( comp = 0 ; comp < (int)LAWORD ; comp++ )
+	    {
+		if ( *hpWORDS != *npAWORD ) break;
+		hpWORDS++;
+		npAWORD++;
+	    }
+	    UnlockResource ( hWORDS );
+	    if ( comp != (int)LAWORD  ) goto L20;
+	}
+	*I2HASH = (int)IHASH;
+	return;
+}
+
+void NEAR LLConnect ( int nT , int nB )
+{
+    BufPoint[nB].forward  = (unsigned char)nT;
+    BufPoint[nT].backward = (unsigned char)nB;
+    return;
+}
+
+int  NEAR LLBreak   ( int nT )
+{
+    int Temp;
+    Temp = BufPoint[nT].backward;
+    BufPoint[nT].backward   = -1;
+    BufPoint[Temp].forward  = -1;
+    return Temp;
+}
+
+int  NEAR LLDist    ( int nT , int nS )
+{
+    int Temp;
+    unsigned char i;
+    if ( nT == nS ) return 0;
+    Temp = 1;
+    i = (unsigned char)nT;
+    while ( BufPoint[i].forward != (unsigned char)nS )
+    {
+	Temp++;
+	i = BufPoint[i].forward;
+    }
+    return Temp;
+}
+
+
+void NEAR GETOC ( long int LOCTC )
+{
+    long int IAD,I;
+
+    IAD = LOCTC -1;
+    for ( I = 2 ; I < 2402 ; I++ )
+    {
+	IAD++;
+	GETWRD ( &chap.I2AC[I] , IAD );
+    }
+    for ( I = 2 ; I < 1189 ; I++ )
+    {
+	chap.IADCHP[I] = chap.IADCHP[I-1] +
+		   ( chap.IADCHP[I] - 2 * chap.IADCHP[I-1] );
+    }
+    chap.IADCHP[1189] = chap.IADCHP[1188] + 21;
+
+    for ( I = 2 ; I < 136 ; I++ )
+    {
+	IAD++;
+	GETWRD ( &book.I2BK[I] , IAD );
+    }
+    for ( I = 1 ; I <= 67 ; I++ )
+    {
+	unBook2Chap[I] = (unsigned int)chap.IADCHP[book.IADBOK[I]-1];
+    }
+    unBook2Chap[0] = (unsigned int)1;
+    return;
+}
+
+#pragma  alloc_text( SEG8, MoveToCilpBoard )
+void FAR MoveToCilpBoard ( void )
+{
+    int i , nSizeOfClip , ich , ibok , ivr , itmp;
+    long int IAD , IS1 , IO , IOS , IC1;
+    char szWord[33];
+    GLOBALHANDLE hClipMemory;
+    char FAR *lpClipMemory;
+
+    if ( nNumPicks == 0 )
+    {
+	(void)BWError ( hWnd,
+				    MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+				    , 0 , IDS_PLISTEMPTY );
+	return;
+    }
+    nSizeOfClip = 0;
+
+    OPEN_KJB ( &IUNIT10 , "KJB2P0.DAT" , OF_READ | OF_REOPEN
+					| OF_SHARE_DENY_WRITE );
+    hpIWS = ( long int huge * )LockResource ( hIWS );
+    hpWORDS = ( char huge * )LockResource ( hWORDS );
+    lpBuffer = GlobalLock ( hDCBuffer );
+    OPEN_CLIP ( &IUNIT11 , "c9l9i9p9.scr" , OF_READWRITE | OF_CREATE
+					 | OF_REOPEN | OF_SHARE_DENY_NONE );
+
+    for ( i = 0 ; i < nNumPicks ; i++ )
+    {
+	if ( ID == 0 )
+	{
+	    I2VER = nPickList[i];
+	}
+	else
+	{
+		GETWRD ( &I2VER , ipoint.IPOINT + nPickList[i] );
+	}
+	IAD = 11 + ( (long int)I2VER - 1 ) * 2;
+	GETWRD ( &hilo.I2HILO[0] , IAD );
+	IAD = IAD + 1;
+	GETWRD ( &hilo.I2HILO[1] , IAD );
+	IAD = IAD + 1;
+	IVS = hilo.I4HILO;
+	GETWRD ( &hilo.I2HILO[0] , IAD );
+	IAD = IAD + 1;
+	GETWRD ( &hilo.I2HILO[1] , IAD );
+	IVE = hilo.I4HILO - 1;
+	for ( ich = 1 ; chap.IADCHP[ich] < I2VER ; ich++ );
+	for ( ibok = 1 ; book.IADBOK[ibok] <= ich ; ibok++ );
+	ivr = I2VER - (int)chap.IADCHP[ich-1];
+	ich = ich - (int)book.IADBOK[ibok-1] + 1;
+	ibok--;
+	szWord[0] = ' ';
+	for ( itmp = 0 ; itmp < 3 ; itmp++ ) szWord[itmp+1] =
+						       books[ibok][itmp];
+	nNumChars = wsprintf ( &szWord[4] , " %i:%i " , ich , ivr ) + 4;
+	if ( _lwrite ( IUNIT11 , (LPSTR)szWord , nNumChars ) == -1 )
+								 wexit ( 91 );
+	nSizeOfClip += nNumChars;
+
+	for ( IVW = IVS ; IVW <= IVE ; IVW++ )
+	{
+	    GETWRD ( &I2WRD , IVW );
+	    if ( IVW == IVS && I2WRD == 0 )
+	    {
+		ICAP = TRUE;
+		continue;
+	    }
+	    if ( IWL[I2WRD] <=	0 || IWL[I2WRD] > 127 )
+	    {
+		  (void)BWError ( hWnd,
+				    MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+				    , 1 , IDS_BADDATABASE );
+		  continue;
+	    }
+	    IS1 = *(hpIWS+I2WRD);
+	    IO = 0;
+	    if ( I2WRD > 7 )
+	    {
+		szWord[0] = ' ';
+		IO++;
+	    }
+	    IOS = IO + IWL[I2WRD];
+	    _fstrncpy ( &szWord[IO] , hpWORDS+IS1 , IWL[I2WRD] );
+	    if ( ICAP )
+	    {
+		IC1 = (int)*(hpWORDS+IS1);
+		if ( IC1 > 96 ) IC1 = IC1 - 32;
+		szWord[IO] = (char)IC1;
+		ICAP = FALSE;
+	    }
+	    if ( I2WRD < 4 )
+	    {
+		ICAP = TRUE;
+		szWord[IOS] = ' ';
+		IOS++;
+	    }
+	    szWord[IOS] = '\0';
+	    nNumChars = (int)IOS;
+
+	    if ( _lwrite ( IUNIT11 , (LPSTR)szWord , nNumChars ) == -1 )
+								 wexit ( 91 );
+	    nSizeOfClip += nNumChars;
+	}
+	nNumChars = wsprintf ( (LPSTR)szWord , "\r\n" );
+	if ( _lwrite ( IUNIT11 , (LPSTR)szWord , nNumChars ) == -1 )
+								 wexit ( 91 );
+	nSizeOfClip += nNumChars;
+    }
+    szWord[0] = '\0';
+    if ( _lwrite ( IUNIT11 , (LPSTR)szWord , 1 ) == -1 ) wexit ( 91 );
+    nSizeOfClip++;
+
+    _lclose ( IUNIT10 );
+    UnlockResource ( hIWS );
+    UnlockResource ( hWORDS );
+    GlobalUnlock   ( hDCBuffer );
+
+    _llseek ( IUNIT11 , 0 , 0 );
+    if ( ( hClipMemory = GlobalAlloc ( GHND , (DWORD) nSizeOfClip + 1 ) ) == NULL ) OutOfMem ();
+    if ( ( lpClipMemory = GlobalLock ( hClipMemory ) ) == NULL ) OutOfMem ();
+    if ( _lread ( IUNIT11 , lpClipMemory , nSizeOfClip ) <= 0 ) wexit ( 79 );
+    GlobalUnlock ( hClipMemory );
+    OpenClipboard ( hWnd );
+    EmptyClipboard ();
+    SetClipboardData ( CF_TEXT , hClipMemory );
+    CloseClipboard ();
+
+    _lclose ( IUNIT11 );
+
+
+
+    return;
+
+}
+
+BOOL FAR CheckPickList ( int Vnum )
+{
+    int i;
+
+    if ( nNumPicks == 0 ) return FALSE;
+    for ( i = 0 ; i < nNumPicks ; i++ ) if ( nPickList[i] == Vnum )
+								 return TRUE;
+    return FALSE;
+}
+
+#pragma  alloc_text( SEG1, MakeHelpPathName )
+/****************************************************************************
+
+   FUNCTION:   MakeHelpPathName
+
+   PURPOSE:    Bible4w assumes that the .HLP help file is in the same
+	       directory as the Bible4w executable.This function derives
+               the full path name of the help file from the path of the
+               executable.
+
+****************************************************************************/
+
+void FAR MakeHelpPathName(szFileName)
+char * szFileName;
+{
+   char *  pcFileName;
+   int     nFileNameLen;
+
+   nFileNameLen = GetModuleFileName(hInst,szFileName,EXE_NAME_MAX_SIZE);
+   pcFileName = szFileName + nFileNameLen;
+
+   while (pcFileName > szFileName) {
+       if (*pcFileName == '\\' || *pcFileName == ':') {
+           *(++pcFileName) = '\0';
+           break;
+       }
+   nFileNameLen--;
+   pcFileName--;
+   }
+
+   if ((nFileNameLen+13) < EXE_NAME_MAX_SIZE) {
+       lstrcat(szFileName, "bible4w.hlp");
+   }
+
+   else {
+       lstrcat(szFileName, "?");
+   }
+
+   return;
+}
+
+void FAR OutOfMem ( void )
+{
+    int msg;
+
+    MessageBeep ( MB_ICONHAND );
+    msg = MessageBox ( hWnd , "Out of Memory - close some windows and try again",
+		    "Out of Memory", MB_OK | MB_ICONHAND | MB_SYSTEMMODAL );
+
+#if defined ( DEBUG )
+    if ( msg == 0 )
+    {
+	dprintf ( "Out of Memory\n" );
+	FatalExit ( -1 );
+    }
+#else
+    PostQuitMessage ( 1 );
+#endif
+
+    return;
+}
+
+/****************************************************************************
+ *									    *
+ *  FUNCTION   : BWError ( hwnd, flags, quit, id, ...)			    *
+ *		 hwnd = parent Window handle				    *
+ *		 flags = MB_ flags sent to the message box routine	    *
+ *		 quit = post quit message flag ( ==1 => post quit)	    *
+ *		 id = string id number					    *
+ *		 (additional parameters passed on to wsprintf function)     *
+ *									    *
+ *  PURPOSE    : Flashes a Message Box to the user. The format string is    *
+ *		 taken from the STRINGTABLE.				    *
+ *									    *
+ *  RETURNS    : Returns value returned by MessageBox() to the caller.	    *
+ *									    *
+ ****************************************************************************/
+short FAR BWError(HWND hwnd, WORD bFlags, WORD quit, WORD id, ...)
+{
+    int msg;
+    char sz[160];
+    char szFmt[128];
+
+    switch ( quit )
+    {
+	case 0:
+	default:
+	   MessageBeep(MB_ICONEXCLAMATION);
+	   break;
+
+	case 1:
+	   MessageBeep ( MB_ICONHAND );
+	   break;
+    }
+    if ( LoadString (hInst, id, szFmt, sizeof (szFmt)) == 0 )
+    {
+	msg = MessageBox (hWnd, "Cannot load string resource!", NULL,
+	     MB_OK | MB_ICONHAND | MB_SYSTEMMODAL );
+
+#if defined ( DEBUG )
+	if ( msg == 0 )
+	{
+	    dprintf ( "Cannot load string\n" );
+	    FatalExit ( -1 );
+	}
+#endif
+	PostQuitMessage ( 1 );
+	return 0;
+    }
+
+    wvsprintf (sz, szFmt, (LPSTR)(&id + 1));
+    if ( !(msg = MessageBox (hWnd, sz, NULL, bFlags) ) )
+    {
+	msg = MessageBox ( hWnd , "Out of Memory (2) - close some windows and try again",
+		    "Out of Memory", MB_OK | MB_ICONHAND | MB_SYSTEMMODAL );
+
+#if defined ( DEBUG )
+	if ( msg == 0 )
+	{
+	    dprintf ( "Out of Memory\n" );
+	    FatalExit ( -1 );
+	}
+#endif
+	PostQuitMessage ( 1 );
+	return 0;
+    }
+    if ( quit == 1 ) PostQuitMessage ( 1 );
+    return msg;
+}
+
+VOID FAR wexit(int status)
+{
+    (void)BWError ( hWnd, MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+	  , 1 , IDS_ABORT, status );
+    return;
+}
+
+#pragma  alloc_text( SEG1, Bible4wInit )
+/****************************************************************************
+ *									    *
+ *  FUNCTION   : Bible4wInit (hInstance,hPrevInstance)			    *
+ *									    *
+ *  PURPOSE    : Registers the main window class.			    *
+ *									    *
+ *  RETURNS    : TRUE	-  if RegisterClass() went off ok		    *
+ *		 FALSE	-  otherwise.					    *
+ *									    *
+ ****************************************************************************/
+BOOL FAR PASCAL Bible4wInit (hInstance,hPrevInstance)
+
+HANDLE hInstance;
+HANDLE hPrevInstance;
+
+{
+    HANDLE    hMemory;
+    PWNDCLASS pWndClass;
+    DWORD TempFlags, TotFreeMem;
+    DWORD dwMinFree=400000;
+    char lpszTemp[30];
+    HANDLE hMemTemp; BOOL bTemp;
+    char szAppName[] = "Bible4w";
+    WORD nWindowsVersion;
+    int iKanjiWinHeight, iDBCSEnabled;
+
+#if defined ( DEBUG )
+	    dprintf ( "In Bible4wInit\n" );
+#endif
+
+    TempFlags = GetWinFlags ();
+    nWindowsVersion = GetVersion();
+    iDBCSEnabled    = GetSystemMetrics ( SM_DBCSENABLED );
+    iKanjiWinHeight = GetSystemMetrics ( SM_CYKANJIWINDOW );
+    cxScreen =	      GetSystemMetrics ( SM_CXSCREEN );
+    cyScreen =	      GetSystemMetrics ( SM_CYSCREEN );
+    cxDlgFrame =      GetSystemMetrics ( SM_CXDLGFRAME );
+    cyDlgFrame =      GetSystemMetrics ( SM_CYDLGFRAME );
+    cyCaption =       GetSystemMetrics ( SM_CYCAPTION );
+
+#if defined ( DEBUG )
+	    dprintf ( "TempFlags = %li, Windows Version = %i , %i\n",
+		       TempFlags,
+		       (int)LOBYTE(nWindowsVersion),
+		       (int)HIBYTE(nWindowsVersion) );
+	    dprintf ( "Kanji Window Height = %i\n", iKanjiWinHeight );
+	    dprintf ( "DBCS Enabled = %i\n", iDBCSEnabled );
+	    if ( TempFlags & WF_CPU086 )
+	       dprintf ( "8086 cpu, " );
+	    if ( TempFlags & WF_CPU186 )
+	       dprintf ( "80186 cpu, " );
+	    if ( TempFlags & WF_CPU286 )
+	       dprintf ( "80286 cpu, " );
+	    if ( TempFlags & WF_CPU386 )
+	       dprintf ( "80386 cpu, " );
+	    if ( TempFlags & WF_CPU486 )
+	       dprintf ( "80486 cpu, " );
+	    if ( !(TempFlags & WF_80x87) )
+	       dprintf ( "no " );
+	    dprintf ( "80x87 math coprocessor, " );
+	    if ( TempFlags & WF_ENHANCED )
+	       dprintf ( "386 enhanced " );
+	    if ( TempFlags & WF_STANDARD )
+	       dprintf ( "standard " );
+	    if ( TempFlags & WF_PMODE )
+	       dprintf ( "protected mode" );
+	    if ( TempFlags & WF_SMALLFRAME )
+	       dprintf ( "small-frame EMS" );
+	    if ( TempFlags & WF_LARGEFRAME )
+	       dprintf ( "large-frame EMS" );
+	    dprintf ( "\n" );
+#endif
+
+    if ( !( ( TempFlags & WF_ENHANCED ) | ( TempFlags & WF_STANDARD ) ) )
+    {
+	hMemTemp = GlobalAlloc ( GMEM_MOVEABLE ,
+			       TotFreeMem = GlobalCompact ( dwMinFree ) );
+	if ( hMemTemp == NULL )
+	{
+	    (void)BWError ( hWnd,
+				    MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+				    , 0 , IDS_CANTCOMPACT );
+	}
+	GlobalFree ( hMemTemp );
+	dprintf ( "Free Memory = %li\n" , TotFreeMem );
+    }
+
+    MakeHelpPathName ( szHelpFileName );
+
+    if ( !hPrevInstance )
+    {
+	/* Initialize the menu window class */
+        if ( ( hMemory = LocalAlloc(LPTR, sizeof(WNDCLASS)) ) == NULL )
+        {
+
+#if defined ( DEBUG )
+	    dprintf ( "Cannot allocate local heap for WndClass stricture\n" );
+#endif
+
+            OutOfMem ();
+        }
+	pWndClass = (PWNDCLASS) LocalLock(hMemory);
+
+	pWndClass->style	 = NULL;
+	pWndClass->lpfnWndProc	 = Bible4WndProc;
+	pWndClass->hInstance	 = hInstance;
+	pWndClass->hIcon	 = LoadIcon (hInstance, "Bible4w");
+	pWndClass->hCursor	 = LoadCursor (NULL, IDC_ARROW);
+	pWndClass->hbrBackground = GetStockObject (WHITE_BRUSH);
+	pWndClass->lpszMenuName  = (LPSTR) "Bible4wMenu",
+	pWndClass->lpszClassName = (LPSTR) "Bible4w";
+
+	bTemp = RegisterClass ( pWndClass );
+	LocalUnlock ( hMemory );
+	LocalFree ( hMemory );
+	if ( !bTemp ) return bTemp;
+    }
+/* If running on a Pen Windows system, register this app so all
+		EDIT controls in dialogs are replaced by HEDIT controls.
+		(Notice the CONTROL statement in the RC file is "EDIT",
+		RegisterPenApp will automatically change that control to
+		an HEDIT.
+*/
+
+	if ((hPenWin = GetSystemMetrics(SM_PENWINDOWS)) != NULL)
+	{
+/*
+   We do this fancy GetProcAddress simply because we don't know if we're
+   running Pen Windows.
+*/
+#if defined ( DEBUG )
+	   dprintf ( "hPenWin != NULL\n" );
+#endif
+
+	   if ( (RegPenApp = GetProcAddress(hPenWin, "RegisterPenApp"))
+				    != NULL) (*RegPenApp)(RPA_DEFAULT, TRUE);
+	}
+
+	/* load the libarary containing the custom dictionary procedure */
+	if ( hPenWin )
+	{
+	   if ((hCustomDictLib = LoadLibrary(szCustomDictLib)) >= 32)
+		{
+		if ((lpdfCustomDictProc = GetProcAddress(hCustomDictLib, szCustomDictProc)) == NULL)
+ 			return FALSE;
+		}
+	   else
+		{
+		(void)BWError ( hWnd,
+				    MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+				    , 0 , IDS_CHECKPATH, (LPSTR)szCustomDictLib);
+		return FALSE;
+		}
+	   lpfnLookUp = MakeProcInstance ( fLookUp , hInst );
+	}
+
+/* Create the app. window */
+
+    return ( ( hWnd = CreateWindow (
+			 "Bible4w",
+                         "Bible for Windows",
+                         WS_OVERLAPPEDWINDOW | WS_VSCROLL |
+                                               ES_AUTOVSCROLL,
+			 CW_USEDEFAULT,
+			 CW_USEDEFAULT,
+			 cxScreen * 9 / 10,
+			 cyScreen * 9 / 10,
+			 (HWND) NULL,
+			 NULL,
+			 hInstance,
+			 (LPSTR) NULL
+			 ) ) == NULL ? FALSE : TRUE );
+}
+
+VOID FAR OPEN_KJB ( HFILE FAR *pFile, LPSTR szFileName, WORD szMode )
+{
+   if ((*pFile = OpenFile(szFileName,&ofKJB,szMode)) == (HFILE)-1)
+   {
+      (void)BWError ( hWnd, MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+		  , 1 , IDS_CANTOPENB, (LPSTR)szFileName );
+   }
+}
+
+VOID FAR OPEN_CLIP ( HFILE FAR *pFile, LPSTR szFileName, WORD szMode )
+{
+   if ((*pFile = OpenFile(szFileName,&ofCLIP,szMode)) == (HFILE)-1)
+   {
+      (void)BWError ( hWnd, MB_APPLMODAL | MB_OK | MB_ICONEXCLAMATION
+		  , 1 , IDS_CANTOPENS, (LPSTR)szFileName );
+   }
+}

@@ -1,0 +1,512 @@
+C*********************** In Bible4wInit **********************
+TempFlags = 3113, Windows Version = 3 , 10
+Kanji Window Height = 0
+DBCS Enabled = 0
+80486 cpu, 80x87 math coprocessor, 386 enhanced protected mode
+Bible text database version = BIB1.0
+ add3 = 2546
+ IADSOV = 2546
+2 IADSOV = 2546
+word 9 = rebelled
+word 24999 = Achsah
+Total number of words in list = 13857
+old word 1 = new word 1 = .
+old word 2 = new word 2 = !
+old word 3 = new word 3 = ?
+old word 4 = new word 4 = :
+old word 5 = new word 5 = ;
+old word 6 = new word 6 = ,
+old word 7 = new word 7 = )
+old word 33 = new word 8 = !
+old word 8 = new word 9 = (
+old word 40 = new word 10 = (
+old word 41 = new word 11 = )
+old word 44 = new word 12 = ,
+old word 46 = new word 13 = .
+old word 58 = new word 14 = :
+old word 59 = new word 15 = ;
+old word 63 = new word 16 = ?
+old word 12033 = new word 17 = ABOMINATIONS
+old word 5070 = new word 18 = AM
+old word 10439 = new word 19 = AND
+old word 17292 = new word 20 = Aaron
+old word 1067 = new word 21 = Aaron's
+old word 14353 = new word 22 = Aaronites
+old word 8951 = new word 23 = Abaddon
+old word 10032 = new word 24 = Abagtha
+old word 12281 = new word 25 = Abana
+old word 414 = new word 26 = Abarim
+old word 16879 = new word 27 = abase
+old word 1979 = new word 28 = abased
+old word 15219 = new word 29 = abasing
+old word 8892 = new word 6928 = kind
+first word starting with k = 6859
+iSizeWord1 = 48645
+iSizeWord2 = 48739
+Size of GlobalAlloc request = 48645
+Size of word list1 = 48672
+Size of GlobalAlloc request = 48739
+Size of word list2 = 48768
+Size of GlobalAlloc request = 13720
+Size of word pointer list1 = 13728
+Size of GlobalAlloc request = 13998
+Size of word pointer list2 = 14016
+Size of first word text buffer = 48645
+Size of second word text buffer = 48739
+3 IADSOV = 2546
+Size of GlobalAlloc request = 124412
+Size of Start of Verse pointers list = 124416
+reserving verse pointer space... ioutadd = 2546
+done... ioutadd = 64752
+book	chapter	verse
+
+ in the beginning god created the heaven and the earth .
+
+ and the earth was without form , and void ; and darkness was upon the face of the deep . and the spirit of god moved upon the face of the waters .
+
+ and god said , let there be light : and there was light .
+
+ and god saw the light , that it was good : and god divided the light from the darkness .
+
+ he which testifieth these things saith , surely I come quickly . amen . even so , come , lord Jesus .
+ the grace of our lord Jesus Christ be with you all . amen .
+done writing verse text... ioutadd = 1040249
+4 IADSOV = 2546
+saving start of verse pointer data
+done...
+Size of GlobalAlloc request = 55428
+Size of X-Ref pointers list = 55456
+reformatting X-Refs pointer list...
+start of X-Ref list =1040249, Byte address = 2080498
+oldID	address(Byte)
+iNumRefs,iOldID,OldNumber=8854     73     6134
+ I
+iNumRefs,iOldID,OldNumber=1065     80     8503
+ O
+iNumRefs,iOldID,OldNumber=2085     90     11464
+ son
+iNumRefs,iOldID,OldNumber=7943     97     973
+ a
+iNumRefs,iOldID,OldNumber=2434     136     1933
+ but
+iNumRefs,iOldID,OldNumber=6553     196     8469
+ not
+iNumRefs,iOldID,OldNumber=713     529     8487
+ now
+iNumRefs,iOldID,OldNumber=596     1410     8784
+ own
+iNumRefs,iOldID,OldNumber=1131     1436     8712
+ our
+iNumRefs,iOldID,OldNumber=2613     1539     13685
+ you
+iNumRefs,iOldID,OldNumber=596     1568     1326
+ Behold
+iNumRefs,iOldID,OldNumber=2751     1670     8717
+ out
+iNumRefs,iOldID,OldNumber=881     1788     9690
+ put
+iNumRefs,iOldID,OldNumber=821     2129     12767
+ two
+iNumRefs,iOldID,OldNumber=1797     2479     2291
+ children
+iNumRefs,iOldID,OldNumber=624     2850     1981
+ called
+iNumRefs,iOldID,OldNumber=2564     3341     6416
+ Israel
+iNumRefs,iOldID,OldNumber=724     3503     8573
+ offering
+iNumRefs,iOldID,OldNumber=730     4832     1327
+ behold
+iNumRefs,iOldID,OldNumber=577     4879     5706
+ heaven
+iNumRefs,iOldID,OldNumber=719     5330     4400
+ father
+iNumRefs,iOldID,OldNumber=1374     5434     12312
+ Then
+iNumRefs,iOldID,OldNumber=1405     5482     7530
+ made
+iNumRefs,iOldID,OldNumber=1775     5788     1292
+ before
+iNumRefs,iOldID,OldNumber=551     6044     1802
+ brethren
+iNumRefs,iOldID,OldNumber=2091     6284     1996
+ came
+iNumRefs,iOldID,OldNumber=555     6295     2326
+ Christ
+iNumRefs,iOldID,OldNumber=1466     6862     5468
+ hand
+iNumRefs,iOldID,OldNumber=1008     6868     7591
+ make
+iNumRefs,iOldID,OldNumber=3995     6955     10432
+ said
+iNumRefs,iOldID,OldNumber=1718     7254     7087
+ land
+iNumRefs,iOldID,OldNumber=754     7344     5652
+ He
+iNumRefs,iOldID,OldNumber=927     7362     8262
+ name
+iNumRefs,iOldID,OldNumber=715     7554     12105
+ take
+iNumRefs,iOldID,OldNumber=1051     7566     7416
+ Lord
+iNumRefs,iOldID,OldNumber=1161     7826     12359
+ things
+iNumRefs,iOldID,OldNumber=3826     7885     12299
+ thee
+iNumRefs,iOldID,OldNumber=520     7991     12400
+ thousand
+iNumRefs,iOldID,OldNumber=2139     8071     8988
+ people
+iNumRefs,iOldID,OldNumber=584     8351     12393
+ Thou
+iNumRefs,iOldID,OldNumber=656     8490     7305
+ like
+iNumRefs,iOldID,OldNumber=2239     8508     5606
+ hath
+iNumRefs,iOldID,OldNumber=12577     8520     12294
+ that
+iNumRefs,iOldID,OldNumber=3843     8556     5622
+ have
+iNumRefs,iOldID,OldNumber=1390     8592     10561
+ saying
+iNumRefs,iOldID,OldNumber=6425     8693     12310
+ them
+iNumRefs,iOldID,OldNumber=795     8794     12313
+ then
+iNumRefs,iOldID,OldNumber=650     8835     13315
+ what
+iNumRefs,iOldID,OldNumber=2485     9109     13325
+ when
+iNumRefs,iOldID,OldNumber=1849     9196     2464
+ come
+iNumRefs,iOldID,OldNumber=623     9214     7988
+ mine
+iNumRefs,iOldID,OldNumber=2181     9222     6939
+ king
+iNumRefs,iOldID,OldNumber=622     9296     11406
+ So
+iNumRefs,iOldID,OldNumber=548     9298     4564
+ fire
+iNumRefs,iOldID,OldNumber=565     9520     3571
+ done
+iNumRefs,iOldID,OldNumber=535     9662     7660
+ many
+iNumRefs,iOldID,OldNumber=1036     9687     5581
+ hast
+iNumRefs,iOldID,OldNumber=623     9750     12485
+ time
+iNumRefs,iOldID,OldNumber=6970     9905     12343
+ they
+iNumRefs,iOldID,OldNumber=910     9920     940
+ away
+iNumRefs,iOldID,OldNumber=711     9957     5213
+ good
+iNumRefs,iOldID,OldNumber=6877     9996     1217
+ be
+iNumRefs,iOldID,OldNumber=768     10042     11116
+ should
+iNumRefs,iOldID,OldNumber=1297     10047     4174
+ even
+iNumRefs,iOldID,OldNumber=2767     10166     13305
+ were
+iNumRefs,iOldID,OldNumber=2455     10175     12380
+ this
+iNumRefs,iOldID,OldNumber=792     10226     5131
+ give
+iNumRefs,iOldID,OldNumber=822     10356     8895
+ pass
+iNumRefs,iOldID,OldNumber=854     10452     3068
+ days
+iNumRefs,iOldID,OldNumber=684     10600     10744
+ sent
+iNumRefs,iOldID,OldNumber=9666     10608     5653
+ he
+iNumRefs,iOldID,OldNumber=3807     10618     13434
+ will
+iNumRefs,iOldID,OldNumber=856     10670     465
+ am
+iNumRefs,iOldID,OldNumber=610     10749     4194
+ evil
+iNumRefs,iOldID,OldNumber=1665     10758     451
+ also
+iNumRefs,iOldID,OldNumber=1673     10767     530
+ an
+iNumRefs,iOldID,OldNumber=1110     10815     6164
+ if
+iNumRefs,iOldID,OldNumber=1399     11008     13301
+ went
+iNumRefs,iOldID,OldNumber=4092     11118     7757
+ me
+iNumRefs,iOldID,OldNumber=730     11138     13393
+ whom
+iNumRefs,iOldID,OldNumber=502     11158     4301
+ eyes
+iNumRefs,iOldID,OldNumber=1301     11200     3547
+ do
+iNumRefs,iOldID,OldNumber=3261     11252     766
+ as
+iNumRefs,iOldID,OldNumber=1507     11349     873
+ at
+iNumRefs,iOldID,OldNumber=685     11376     8100
+ more
+iNumRefs,iOldID,OldNumber=3579     11483     4873
+ from
+iNumRefs,iOldID,OldNumber=1257     11536     5175
+ go
+iNumRefs,iOldID,OldNumber=1003     11641     8735
+ over
+iNumRefs,iOldID,OldNumber=12331     11655     6226
+ in
+iNumRefs,iOldID,OldNumber=868     11710     2365
+ city
+iNumRefs,iOldID,OldNumber=4890     11711     12394
+ thou
+iNumRefs,iOldID,OldNumber=5961     11858     13491
+ with
+iNumRefs,iOldID,OldNumber=2540     11956     1949
+ by
+iNumRefs,iOldID,OldNumber=1643     12138     13240
+ we
+iNumRefs,iOldID,OldNumber=6832     12180     6381
+ is
+iNumRefs,iOldID,OldNumber=749     12190     12555
+ took
+iNumRefs,iOldID,OldNumber=5891     12285     6430
+ it
+iNumRefs,iOldID,OldNumber=2014     12291     6347
+ into
+iNumRefs,iOldID,OldNumber=729     12296     7004
+ know
+iNumRefs,iOldID,OldNumber=1343     12320     8435
+ no
+iNumRefs,iOldID,OldNumber=1969     12321     8614
+ on
+iNumRefs,iOldID,OldNumber=3700     12342     13656
+ ye
+iNumRefs,iOldID,OldNumber=690     12382     13564
+ word
+iNumRefs,iOldID,OldNumber=1125     12499     3603
+ down
+iNumRefs,iOldID,OldNumber=1068     12740     11468
+ sons
+iNumRefs,iOldID,OldNumber=1067     12765     8665
+ or
+iNumRefs,iOldID,OldNumber=2730     12863     12920
+ upon
+iNumRefs,iOldID,OldNumber=1067     12880     11407
+ so
+iNumRefs,iOldID,OldNumber=762     12924     149
+ according
+iNumRefs,iOldID,OldNumber=13378     12992     12521
+ to
+iNumRefs,iOldID,OldNumber=2372     13221     12907
+ up
+iNumRefs,iOldID,OldNumber=4135     13298     8210
+ my
+iNumRefs,iOldID,OldNumber=1448     13572     12943
+ us
+iNumRefs,iOldID,OldNumber=8940     13623     12897
+ unto
+iNumRefs,iOldID,OldNumber=811     14403     6663
+ Jerusalem
+iNumRefs,iOldID,OldNumber=1755     14877     13692
+ your
+iNumRefs,iOldID,OldNumber=812     15220     6818
+ Judah
+iNumRefs,iOldID,OldNumber=1011     16000     3060
+ David
+iNumRefs,iOldID,OldNumber=1006     16017     1254
+ because
+iNumRefs,iOldID,OldNumber=802     16504     12323
+ therefore
+iNumRefs,iOldID,OldNumber=629     16814     315
+ again
+iNumRefs,iOldID,OldNumber=716     17286     9204
+ place
+iNumRefs,iOldID,OldNumber=1657     17804     317
+ against
+iNumRefs,iOldID,OldNumber=641     17863     5676
+ heard
+iNumRefs,iOldID,OldNumber=776     18087     8358
+ neither
+iNumRefs,iOldID,OldNumber=6543     18134     7026
+ LORD
+iNumRefs,iOldID,OldNumber=12846     18215     552
+ And
+iNumRefs,iOldID,OldNumber=906     18245     12327
+ thereof
+iNumRefs,iOldID,OldNumber=537     18440     4405
+ fathers
+iNumRefs,iOldID,OldNumber=526     18543     5886
+ himself
+iNumRefs,iOldID,OldNumber=4085     19052     5185
+ God
+iNumRefs,iOldID,OldNumber=4283     19106     13361
+ which
+iNumRefs,iOldID,OldNumber=590     19156     6076
+ hundred
+iNumRefs,iOldID,OldNumber=9760     19303     10848
+ shall
+iNumRefs,iOldID,OldNumber=1842     19324     12295
+ The
+iNumRefs,iOldID,OldNumber=948     19408     5278
+ great
+iNumRefs,iOldID,OldNumber=829     19619     8121
+ Moses
+iNumRefs,iOldID,OldNumber=830     19687     5691
+ heart
+iNumRefs,iOldID,OldNumber=2025     19892     5386
+ had
+iNumRefs,iOldID,OldNumber=585     20045     11532
+ spake
+iNumRefs,iOldID,OldNumber=1103     20053     305
+ after
+iNumRefs,iOldID,OldNumber=1613     20167     10856
+ shalt
+iNumRefs,iOldID,OldNumber=3874     20259     12305
+ their
+iNumRefs,iOldID,OldNumber=505     20265     13087
+ voice
+iNumRefs,iOldID,OldNumber=1743     20494     4697
+ For
+iNumRefs,iOldID,OldNumber=1262     20699     10441
+ saith
+iNumRefs,iOldID,OldNumber=2086     20712     12318
+ there
+iNumRefs,iOldID,OldNumber=916     20760     12357
+ thine
+iNumRefs,iOldID,OldNumber=999     20914     12338
+ these
+iNumRefs,iOldID,OldNumber=541     20980     12358
+ thing
+iNumRefs,iOldID,OldNumber=967     21073     6686
+ Jesus
+iNumRefs,iOldID,OldNumber=977     21100     3355
+ did
+iNumRefs,iOldID,OldNumber=678     21120     1828
+ bring
+iNumRefs,iOldID,OldNumber=649     21150     3748
+ eat
+iNumRefs,iOldID,OldNumber=611     21183     3788
+ Egypt
+iNumRefs,iOldID,OldNumber=985     21244     3731
+ earth
+iNumRefs,iOldID,OldNumber=537     21307     13664
+ years
+iNumRefs,iOldID,OldNumber=903     21309     1005
+ among
+iNumRefs,iOldID,OldNumber=2600     21352     7627
+ man
+iNumRefs,iOldID,OldNumber=1558     21360     1932
+ But
+iNumRefs,iOldID,OldNumber=1731     21537     3065
+ day
+iNumRefs,iOldID,OldNumber=862     21738     1854
+ brought
+iNumRefs,iOldID,OldNumber=507     21837     8562
+ off
+iNumRefs,iOldID,OldNumber=558     21931     10677
+ see
+iNumRefs,iOldID,OldNumber=643     21945     8486
+ Now
+iNumRefs,iOldID,OldNumber=628     22040     110
+ about
+iNumRefs,iOldID,OldNumber=1976     22122     5791
+ her
+iNumRefs,iOldID,OldNumber=523     22127     7135
+ law
+iNumRefs,iOldID,OldNumber=1634     22228     7841
+ men
+iNumRefs,iOldID,OldNumber=5426     22237     422
+ all
+iNumRefs,iOldID,OldNumber=1024     22419     7753
+ may
+iNumRefs,iOldID,OldNumber=6649     22469     5884
+ him
+iNumRefs,iOldID,OldNumber=929     22579     10912
+ she
+iNumRefs,iOldID,OldNumber=2912     22669     701
+ are
+iNumRefs,iOldID,OldNumber=1081     22732     7233
+ let
+iNumRefs,iOldID,OldNumber=547     22813     10551
+ saw
+iNumRefs,iOldID,OldNumber=4515     22817     13179
+ was
+iNumRefs,iOldID,OldNumber=1010     23007     10557
+ say
+iNumRefs,iOldID,OldNumber=8385     23099     5909
+ his
+iNumRefs,iOldID,OldNumber=664     23399     13234
+ way
+iNumRefs,iOldID,OldNumber=1845     23431     8620
+ one
+iNumRefs,iOldID,OldNumber=676     23446     10790
+ set
+iNumRefs,iOldID,OldNumber=546     23882     13566
+ words
+iNumRefs,iOldID,OldNumber=690     24039     13387
+ who
+iNumRefs,iOldID,OldNumber=564     24058     13674
+ yet
+iNumRefs,iOldID,OldNumber=912     24077     604
+ any
+iNumRefs,iOldID,OldNumber=7228     24078     4698
+ for
+iNumRefs,iOldID,OldNumber=1178     24245     4186
+ every
+iNumRefs,iOldID,OldNumber=888     24366     4792
+ forth
+iNumRefs,iOldID,OldNumber=2023     24705     6043
+ house
+iNumRefs,iOldID,OldNumber=4450     24764     12454
+ thy
+iNumRefs,iOldID,OldNumber=746     24974     8461
+ nor
+
+list of pointers to X-Ref lists starts at ioutadd = 1708608, Byte address = 3417216
+IPOINT=163892
+IPOINT=163941
+IPOINT=163987
+IPOINT=164012
+IPOINT=164042
+IPOINT=164079
+IPOINT=164139
+IPOINT=164188
+IPOINT=164227
+IPOINT=164277
+IPOINT=1040456
+IPOINT=1040678
+IPOINT=1040681
+IPOINT=1040682
+IPOINT=1040689
+IPOINT=1040690
+IPOINT=1040724
+IPOINT=1371055
+IPOINT=1121716
+IPOINT=1287219
+IPOINT=1477274
+IPOINT=1078615
+IPOINT=1452149
+IPOINT=1231315
+IPOINT=1273211
+IPOINT=1382533
+IPOINT=1073572
+IPOINT=1473892
+IPOINT=1092482
+IPOINT=1458786
+length of file is 3472650 Bytes
+dump of first 12 words of database follows:
+5 IADSOV = 2546
+ ...
+ 10
+ ...
+ 1708608
+ 2546
+ ...
+iFirstd is 6859 Bytes
+szFirstChar is k
+iSizeWord1 is 48645 Bytes
+iSizeWord2 is 48739 Bytes
+iSizeWordp1 is 13720 Bytes
+iSizeWordp2 is 13998 Bytes

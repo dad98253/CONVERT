@@ -1,0 +1,77 @@
+/****************************************************************************
+ *									    *
+ *  FILE	: convert.rc						    *
+ *									    *
+ *  DESCRIPTION : Resource script file for the Bible database convert code  *
+ *									    *
+ ****************************************************************************/
+#include <windows.h>
+//#include <windowsx.h>
+#include "convert.h"
+
+Bible4w     ICON   convert.ico
+
+#include "bible4w.dlg"
+
+ConvertMenu MENU
+BEGIN
+  POPUP		"&File"
+    BEGIN
+       MENUITEM   "E&xit",		IDM_EXIT
+    END
+
+  POPUP 	"&Help"
+    BEGIN
+       MENUITEM   "&About Bible database convert program...", IDM_ABOUT
+    END
+
+  END
+
+STRINGTABLE LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+
+IDS_CANTOPENB	    "Cannot open the bible text database file '%s' !"
+IDS_CANTOPENS	    "Cannot open the clipboard scratch file '%s' !  Your disk is probably full."
+IDS_ABORT	    "Abnormal error condition number '%i' !  Please inform Nehemiah Ministries."
+IDS_SMALLSCREEN     "The display screen is too small to display the Books Dialog box."
+IDS_BADBOOKARG	    "A bad argument was passed to the Books Dialog callback function."
+IDS_CHAPT0	    "Zero is not a valid chapter number!"
+IDS_CANTRECOGNIZE   "SendMessage to recognizer failed!"
+IDS_NOFINDWRD	    "The word entered is not found in the King James Bible!"
+IDS_CANTRECOGBOOK   "SendMessage to book recognizer failed!"
+IDS_CANTRECOGCHAPT  "SendMessage to chapter recognizer failed!"
+IDS_CANTRECOGVER    "SendMessage to verse recognizer failed!"
+IDS_BADBOOK	    "The book abbreviation used is not correct!"
+IDS_BADCHAPT	    "Bad input value in the chapter box!"
+IDS_CHAPT2BIG	    "The chapter requested is greater then the total number of chapters in the book!"
+IDS_BADVERSE	    "Bad input value in the verse box!"
+IDS_VERSE0	    "Zero is not a valid verse number!"
+IDS_VERSE2BIG	    "The verse requested is greater then the total number of verses in the chapter!"
+IDS_BADDATABASE     "The bible text database file has been corrupted.  Re-install Bible for Windows!"
+IDS_BADHELPFILE     "Problems opening the Bible for Windows help file!"
+IDS_CANTRESIZE	    "The window cannot be re-sized so large!  This is an internal limitation in Bible for Windows.  Make your window smaller!"
+IDS_CANTGOUP	    "You cannot scroll up any further!"
+IDS_CANTGODOWN	    "You cannot scroll down any further!"
+IDS_CANTPAGEUP	    "You cannot page up any further!"
+IDS_CANTPAGEDOWN    "You cannot page down any further!"
+IDS_PLISTFULL	    "The pick list is full!  This is an internal limitation in the program.  Copy the clipboard to your application, then pick more verses."
+IDS_BADDB2	    "Either the bible text database file has been corrupted, or you are out of memory.  Try closeing some applications.  If you are running Windows in real mode, remove all TSR's. If all else fails, re-install Bible for Windows!"
+IDS_OUTOFMEM	    "You are out of memory!  Try closeing some applications.  If you are running Windows in real mode, remove all TSR's!"
+IDS_PLISTEMPTY	    "The pick list is empty!  You must select some verses first.  See HELP PROCEDURES COPYING TEXT for help."
+IDS_CANTCOMPACT     "Global compact failed!"
+IDS_CHECKPATH	    "Make sure your PATH contains : %s"
+IDS_CANTREAD	    "Can't read the file '%s'"
+IDS_CANTCREATE	    "Can't create the file '%s'"
+IDS_CANTWRITE	    "Can't write the file '%s'"
+IDS_ILLFNM	    "Invalid filename: '%s'"
+IDS_CANTFIND	    "Can't find '%s'"
+IDS_HELPNOTAVAIL    "Can't load Windows Help application"
+IDS_APPNAME	    "Bible4w"
+
+END
+
+wordlist WORDLIST LOADONCALL MOVEABLE words
+
+wordsizes WORDSIZES LOADONCALL MOVEABLE iws
+
+END
